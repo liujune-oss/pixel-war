@@ -25,6 +25,12 @@
 #include <Preferences.h>
 #include <WiFi.h>
 
+// ================= [NEW] BLE Libraries =================
+#include <BLE2902.h>
+#include <BLEDevice.h>
+#include <BLEServer.h>
+#include <BLEUtils.h>
+
 #include "secrets.h"
 
 // ================= 1. 硬件引脚 (ESP32-S3) =================
@@ -33,6 +39,7 @@
 #define PIN_BTN_GREEN 2 // D1 (GPIO 2) - 绿色按键
 #define PIN_BTN_BLUE 4  // D3 (GPIO 4) - 蓝色按键
 #define PIN_BUZZER 1    // D0 (GPIO 1) - 蜂鸣器
+#define PIN_BATTERY 5   // D4 (GPIO 5) - 电池电压 ADC
 
 // ================= 2. LED 灯带配置 =================
 #define NUM_LEDS 180             // 灯带总灯数
@@ -132,6 +139,152 @@ bool isScreenSaver = false;
 // 动画效果
 unsigned long gameOverAnimTimer = 0;
 int gameOverAnimFrame = 0;
+
+// ================= [NEW] BLE Objects & Logic =================
+#define SERVICE_UUID "7a0247cb-0000-48a8-b611-3957ce9fb6a4"
+#define CHAR_TX_UUID "7a0247cb-0001-48a8-b611-3957ce9fb6a4"
+#define CHAR_RX_UUID "7a0247cb-0002-48a8-b611-3957ce9fb6a4"
+
+BLEServer *pServer = NULL;
+BLECharacteristic *pTxCharacteristic = NULL;
+BLECharacteristic *pRxCharacteristic = NULL;
+int deviceConnectedCount = 0;
+bool advertisingRestartRequested = false;
+unsigned long bleFeedbackTimer = 0; // [NEW] Timer to show BLE visual feedback
+
+// Forward declarations
+void initGame();
+void saveData();
+
+// ================= [NEW] BLE Callbacks =================
+class MyServerCallbacks : public BLEServerCallbacks {
+  void onConnect(BLEServer *pServer) {
+    deviceConnectedCount++;
+    // Force Enable Notifications (Hack for Windows/some WebBLE)
+    BLEDescriptor *pDesc =
+        pTxCharacteristic->getDescriptorByUUID(BLEUUID((uint16_t)0x2902));
+    if (pDesc) {
+      uint8_t on[] = {0x01, 0x00};
+      pDesc->setValue(on, 2);
+    }
+    Serial.printf("Device Connected. Count: %d\n", deviceConnectedCount);
+    advertisingRestartRequested = true;
+  }
+  void onDisconnect(BLEServer *pServer) {
+    deviceConnectedCount--;
+    if (deviceConnectedCount < 0)
+      deviceConnectedCount = 0;
+    advertisingRestartRequested = true;
+    Serial.printf("Device Disconnected. Count: %d\n", deviceConnectedCount);
+  }
+};
+
+class RxCallbacks : public BLECharacteristicCallbacks {
+  void onWrite(BLECharacteristic *pCharacteristic) {
+    String value = pCharacteristic->getValue().c_str();
+    if (value.length() > 0) {
+      Serial.printf("BLE RX: %s\n", value.c_str());
+
+      // Parse Commands
+      if (value == "RESTART") {
+        initGame();
+      } else if (value == "SYNC") {
+        String json =
+            "{\"type\":\"sync\",\"brt\":" + String(currentBrightness) +
+            ",\"vol\":" + String(currentVolume) +
+            ",\"diff\":" + String(difficulty) + "}";
+        pTxCharacteristic->setValue((uint8_t *)json.c_str(), json.length());
+        pTxCharacteristic->notify();
+      } else if (value.startsWith("B:")) {
+        currentBrightness = value.substring(2).toInt();
+        if (currentBrightness < 10)
+          currentBrightness = 10;
+        if (currentBrightness > 100)
+          currentBrightness = 100;
+        strip.setBrightness(currentBrightness * 255 / 100);
+
+        // 实时灯光反馈
+        strip.clear();
+        strip.fill(strip.Color(0, 255, 0), 0,
+                   (NUM_LEDS * currentBrightness) / 100);
+        strip.show();
+        bleFeedbackTimer = millis(); // [NEW] Stall normal rendering
+
+        saveData();
+      } else if (value.startsWith("V:")) {
+        currentVolume = value.substring(2).toInt();
+        if (currentVolume < 0)
+          currentVolume = 0;
+        if (currentVolume > 100)
+          currentVolume = 100;
+        audio.setVolume(currentVolume);
+
+        // 实时声音反馈 (长蜂鸣声测试音量)
+        audio.playBeep();
+
+        saveData();
+      } else if (value.startsWith("D:")) {
+        difficulty = value.substring(2).toInt();
+        if (difficulty < 1)
+          difficulty = 1;
+        if (difficulty > 14)
+          difficulty = 14;
+        audio.playBeep();
+        saveData();
+      }
+    }
+  }
+};
+
+// ================= [NEW] Battery Monitor =================
+// 读取电池电压 (单位: mV) - 带滤波
+int readBatteryVoltage() {
+  // ESP32-S3 ADC: 12-bit (0-4095), 参考电压约 3.3V
+  // 电压分压 1:1，实际电压 = ADC电压 × 2
+  long sum = 0;
+  const int samples = 8;
+  for (int i = 0; i < samples; i++) {
+    sum += analogRead(PIN_BATTERY);
+    delayMicroseconds(500); // 0.5ms 间隔
+  }
+  int adcValue = sum / samples;
+  int batteryMV = (adcValue * 3300 * 2) / 4095;
+  return batteryMV;
+}
+
+// 转换电压为百分比 - 5 位滑动窗口滤波
+int mvHistory[5] = {0, 0, 0, 0, 0};
+int mvHistoryIndex = 0;
+bool mvHistoryFilled = false;
+
+int getBatteryPercent() {
+  int mv = readBatteryVoltage();
+
+  mvHistory[mvHistoryIndex] = mv;
+  mvHistoryIndex = (mvHistoryIndex + 1) % 5;
+  if (mvHistoryIndex == 0)
+    mvHistoryFilled = true;
+
+  int count = mvHistoryFilled ? 5 : mvHistoryIndex;
+  if (count == 0)
+    count = 1;
+  long sum = 0;
+  for (int i = 0; i < count; i++) {
+    sum += mvHistory[i];
+  }
+  int avgMv = sum / count;
+
+  // [校准] 实际满电约 4040mV，空电约 3300mV
+  int percent;
+  if (avgMv >= 4040)
+    percent = 100;
+  else if (avgMv <= 3300)
+    percent = 0;
+  else
+    percent = (avgMv - 3300) * 100 / 740;
+
+  return percent;
+}
 
 // ================= 5. 数据存取 =================
 void loadData() {
@@ -773,6 +926,36 @@ void setup() {
   strip.setBrightness(30);
   strip.show();
 
+  // ================= [NEW] 初始化 BLE 服务 =================
+  BLEDevice::init("Pixel War");
+  pServer = BLEDevice::createServer();
+  pServer->setCallbacks(new MyServerCallbacks());
+
+  BLEService *pService = pServer->createService(SERVICE_UUID);
+
+  // TX Characteristic (Notify)
+  pTxCharacteristic = pService->createCharacteristic(
+      CHAR_TX_UUID,
+      BLECharacteristic::PROPERTY_NOTIFY | BLECharacteristic::PROPERTY_READ);
+  pTxCharacteristic->addDescriptor(new BLE2902());
+
+  // RX Characteristic (Write)
+  pRxCharacteristic = pService->createCharacteristic(
+      CHAR_RX_UUID, BLECharacteristic::PROPERTY_WRITE);
+  pRxCharacteristic->setCallbacks(new RxCallbacks());
+
+  pService->start();
+
+  // 广告设置
+  BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();
+  pAdvertising->addServiceUUID(SERVICE_UUID);
+  pAdvertising->setScanResponse(true);
+  pAdvertising->setMinPreferred(
+      0x06); // functions that help with iPhone connections issue
+  pAdvertising->setMinPreferred(0x12);
+  BLEDevice::startAdvertising();
+  Serial.println("BLE Ready.");
+
   // 开机时检测组合键进入 OTA 模式
   if (digitalRead(PIN_BTN_RED) == LOW && digitalRead(PIN_BTN_GREEN) == LOW) {
     isOTAMode = true;
@@ -828,6 +1011,17 @@ void loop() {
   // 状态机更新
   unsigned long now = millis();
 
+  // ================= 10. 状态机与显示更新 =================
+  // 如果正在显示 BLE 反馈，跳过本帧正常渲染
+  if (bleFeedbackTimer > 0) {
+    if (now - bleFeedbackTimer < 500) {
+      // 保持反馈画面 500ms
+      return; // Skip normal update/draw
+    } else {
+      bleFeedbackTimer = 0; // 结束反馈，恢复正常
+    }
+  }
+
   if (currentState == STATE_IDLE) {
     drawIdleScreen();
   } else if (currentState == STATE_PLAYING) {
@@ -880,6 +1074,26 @@ void loop() {
     drawGameOver();
   } else if (currentState == STATE_SETTINGS) {
     drawSettings();
+  }
+
+  // ================= [NEW] BLE Telemetry Loop =================
+  if (deviceConnectedCount > 0) {
+    static unsigned long lastBleSync = 0;
+    if (now - lastBleSync >= 1000) {
+      lastBleSync = now;
+      int batteryPct = getBatteryPercent();
+      String json = "{\"s\":" + String(score) + ",\"k\":" + String(score) +
+                    ",\"l\":" + String(difficulty) +
+                    ",\"b\":" + String(batteryPct) + "}";
+      pTxCharacteristic->setValue((uint8_t *)json.c_str(), json.length());
+      pTxCharacteristic->notify();
+    }
+  }
+
+  if (advertisingRestartRequested) {
+    advertisingRestartRequested = false;
+    BLEDevice::startAdvertising();
+    Serial.println("Restarted Advertising");
   }
 
   delay(10); // 主循环延迟

@@ -569,7 +569,8 @@
         <div id="connectScreen" class="screen active">
             <div class="header-center">
                 <h1 class="title">Pixel War</h1>
-                <p class="subtitle">ESP32-S3 管理面板</p>
+                <p class="subtitle">ESP32-S3 管理面板 <span id="appVersionDisplayConnect" class="text-secondary font-mono"
+                        style="font-size: 11px; margin-left: 8px;"></span></p>
             </div>
 
             <div class="ble-center">
@@ -661,7 +662,8 @@
             <header class="app-header">
                 <div>
                     <h1 class="title">Pixel War</h1>
-                    <p class="subtitle">设备管理控制台</p>
+                    <p class="subtitle">设备管理控制台 <span id="appVersionDisplay" class="text-secondary font-mono"
+                            style="font-size: 11px; margin-left: 8px;"></span></p>
                 </div>
             </header>
 
@@ -756,6 +758,13 @@
     </div>
 
     <script>
+        // ==========================================
+        // 全局配置区 - 方便修改APP信息
+        // ==========================================
+        const APP_CONFIG = {
+            version: "v1.0.0", // 修改此处的字符串即可更新网页显示的版本号
+        };
+
         // DOM Elements
         const connectScreen = document.getElementById('connectScreen');
         const dashboardScreen = document.getElementById('dashboardScreen');
@@ -764,11 +773,26 @@
         const btnConnect = document.getElementById('btnConnect');
         const statusText = document.getElementById('connectionStatusText');
 
-        // UI state
+        // ==========================================
+        // BLE 配置与状态
+        // ==========================================
+        const BLE_SERVICE_UUID = "7a0247cb-0000-48a8-b611-3957ce9fb6a4";
+        const BLE_TX_UUID = "7a0247cb-0001-48a8-b611-3957ce9fb6a4";
+        const BLE_RX_UUID = "7a0247cb-0002-48a8-b611-3957ce9fb6a4";
+
+        let bleDevice = null;
+        let bleServer = null;
+        let bleService = null;
+        let rxCharacteristic = null;
+        let txCharacteristic = null;
         let isConnected = false;
 
         // Initialize app
         function init() {
+            // 注入版本号
+            document.getElementById('appVersionDisplay').textContent = APP_CONFIG.version;
+            document.getElementById('appVersionDisplayConnect').textContent = APP_CONFIG.version;
+
             setupEventListeners();
             updateMockData();
         }
@@ -782,35 +806,72 @@
                 });
             });
 
-            // Connection flow (Mock)
-            btnConnect.addEventListener('click', () => {
-                statusText.textContent = "Connecting...";
+            // Connection flow
+            btnConnect.addEventListener('click', async () => {
+                if (!navigator.bluetooth) {
+                    alert('很抱歉，当前浏览器不支持 Web Bluetooth API。请使用 Chrome (PC/Android) 或 Bluefy (iOS)。');
+                    return;
+                }
 
-                // Mock connection delay
-                setTimeout(() => {
+                try {
+                    statusText.textContent = "请求蓝牙访问权限...";
+                    bleDevice = await navigator.bluetooth.requestDevice({
+                        filters: [{ namePrefix: 'Pixel War' }],
+                        optionalServices: [BLE_SERVICE_UUID]
+                    });
+
+                    bleDevice.addEventListener('gattserverdisconnected', onDisconnected);
+
+                    statusText.textContent = "正在连接设备...";
+                    bleServer = await bleDevice.gatt.connect();
+
+                    statusText.textContent = "获取服务与通道...";
+                    bleService = await bleServer.getPrimaryService(BLE_SERVICE_UUID);
+
+                    txCharacteristic = await bleService.getCharacteristic(BLE_TX_UUID);
+                    rxCharacteristic = await bleService.getCharacteristic(BLE_RX_UUID);
+
+                    // 开启收包监听
+                    await txCharacteristic.startNotifications();
+                    txCharacteristic.addEventListener('characteristicvaluechanged', handleIncomingData);
+
                     isConnected = true;
-                    statusText.textContent = "Connected successfully!";
+                    statusText.textContent = "连接成功！";
 
-                    // Switch to Dashboard
+                    // 向单片机请求当前保存的系统设置
+                    setTimeout(() => {
+                        sendDataToESP32('SYNC');
+                    }, 500);
+
                     setTimeout(() => {
                         showApp();
-                    }, 500);
-                }, 1500);
+                    }, 800);
+
+                } catch (error) {
+                    console.error('Bluetooth Error:', error);
+                    statusText.textContent = "连接失败: " + error.message;
+                    if (bleDevice && bleDevice.gatt.connected) {
+                        bleDevice.gatt.disconnect();
+                    }
+                }
             });
 
             // Device commands log
-            document.getElementById('btnRestartGame').addEventListener('click', () => console.log('Command: Restart Game'));
-            document.getElementById('btnStopGame').addEventListener('click', () => console.log('Command: Stop Game'));
-            document.getElementById('btnRunDemo').addEventListener('click', () => console.log('Command: Run Demo'));
+            document.getElementById('btnRestartGame').addEventListener('click', () => sendDataToESP32('RESTART'));
+            document.getElementById('btnStopGame').addEventListener('click', () => sendDataToESP32('PAUSE'));
+            document.getElementById('btnRunDemo').addEventListener('click', () => sendDataToESP32('DEMO'));
             document.getElementById('btnDisconnect').addEventListener('click', () => {
-                isConnected = false;
-                showConnectScreen();
+                if (bleDevice && bleDevice.gatt.connected) {
+                    bleDevice.gatt.disconnect();
+                } else {
+                    onDisconnected(); // Force UI update
+                }
             });
 
-            // Sliders
-            setupSlider('brightnessSlider', 'brightnessValue', '%');
-            setupSlider('volumeSlider', 'volumeValue', '%', (val) => val * 10); // 0-10 to 0-100%
-            setupSlider('difficultySlider', 'difficultyLevelStr', '', (val) => getDifficultyString(val));
+            // Sliders (Update UI visually, and send command to ESP32 on release)
+            setupSlider('brightnessSlider', 'brightnessValue', '%', null, (val) => sendDataToESP32('B:' + val));
+            setupSlider('volumeSlider', 'volumeValue', '%', (val) => val * 10, (val) => sendDataToESP32('V:' + (val * 10)));
+            setupSlider('difficultySlider', 'difficultyLevelStr', '', (val) => getDifficultyString(val), (val) => sendDataToESP32('D:' + val));
 
             // Slider buttons
             setupSliderButtons('brightnessSlider', 'btnBrightnessMinus', 'btnBrightnessPlus', 5);
@@ -846,17 +907,23 @@
             document.getElementById(targetId).classList.add('active');
         }
 
-        function setupSlider(sliderId, valueId, suffix, transformFn = null) {
+        function setupSlider(sliderId, valueId, suffix, transformFn = null, changeCallback = null) {
             const slider = document.getElementById(sliderId);
             const valueDisplay = document.getElementById(valueId);
 
+            // oninput fires continuously as slider moves
             slider.addEventListener('input', (e) => {
                 let val = e.target.value;
-                if (transformFn) {
-                    val = transformFn(val);
-                }
+                if (transformFn) val = transformFn(val);
                 valueDisplay.textContent = val + suffix;
             });
+
+            // onchange fires only when dragging stops, to avoid flooding BLE
+            if (changeCallback) {
+                slider.addEventListener('change', (e) => {
+                    changeCallback(e.target.value);
+                });
+            }
         }
 
         function setupSliderButtons(sliderId, minusId, plusId, step) {
@@ -865,11 +932,13 @@
             document.getElementById(minusId).addEventListener('click', () => {
                 slider.value = Math.max(parseInt(slider.min), parseInt(slider.value) - step);
                 slider.dispatchEvent(new Event('input'));
+                slider.dispatchEvent(new Event('change')); // Triggers sending BLE commmand
             });
 
             document.getElementById(plusId).addEventListener('click', () => {
                 slider.value = Math.min(parseInt(slider.max), parseInt(slider.value) + step);
                 slider.dispatchEvent(new Event('input'));
+                slider.dispatchEvent(new Event('change')); // Triggers sending BLE commmand
             });
         }
 
@@ -881,12 +950,81 @@
         }
 
         function updateMockData() {
-            // Populate some initial mock values
-            document.getElementById('scoreValue').textContent = "12,450";
-            document.getElementById('killsValue').textContent = "84";
-            document.getElementById('currentLevelValue').textContent = "等级 5";
-            document.getElementById('batteryValue').textContent = "85%";
-            document.getElementById('settingsBatteryValue').textContent = "85%";
+            // Populate some initial blank values, they will be overwritten by BLE
+            document.getElementById('scoreValue').textContent = "---";
+            document.getElementById('killsValue').textContent = "---";
+            document.getElementById('currentLevelValue').textContent = "---";
+            document.getElementById('batteryValue').textContent = "---%";
+            document.getElementById('settingsBatteryValue').textContent = "---%";
+        }
+
+        // ==========================================
+        // BLE 通信核心函数
+        // ==========================================
+        function onDisconnected() {
+            console.log('> Bluetooth Device disconnected');
+            isConnected = false;
+            bleDevice = null;
+            bleServer = null;
+            bleService = null;
+            txCharacteristic = null;
+            rxCharacteristic = null;
+            showConnectScreen();
+        }
+
+        async function sendDataToESP32(dataString) {
+            if (!rxCharacteristic) {
+                console.warn("[BLE] Not connected to device. Cannot send: " + dataString);
+                return;
+            }
+            try {
+                const encoder = new TextEncoder();
+                await rxCharacteristic.writeValue(encoder.encode(dataString));
+                console.log("[BLE TX] " + dataString);
+            } catch (error) {
+                console.error("[BLE TX ERROR]", error);
+            }
+        }
+
+        function handleIncomingData(event) {
+            const value = event.target.value;
+            const decoder = new TextDecoder('utf-8');
+            const str = decoder.decode(value);
+
+            try {
+                const data = JSON.parse(str);
+
+                // 处理硬件发来的初始配置同步
+                if (data.type === "sync") {
+                    if (data.brt !== undefined) {
+                        const s = document.getElementById('brightnessSlider');
+                        s.value = data.brt;
+                        document.getElementById('brightnessValue').textContent = data.brt + '%';
+                    }
+                    if (data.vol !== undefined) {
+                        const s = document.getElementById('volumeSlider');
+                        s.value = Math.round(data.vol / 10);
+                        document.getElementById('volumeValue').textContent = data.vol + '%';
+                    }
+                    if (data.diff !== undefined) {
+                        const s = document.getElementById('difficultySlider');
+                        s.value = data.diff;
+                        document.getElementById('difficultyLevelStr').textContent = getDifficultyString(data.diff);
+                    }
+                    return;
+                }
+
+                // 处理常规的战况 JSON e.g. {"s":12,"k":84,"l":5,"b":100}
+                if (data.s !== undefined) document.getElementById('scoreValue').textContent = data.s;
+                if (data.k !== undefined) document.getElementById('killsValue').textContent = data.k;
+                if (data.l !== undefined) document.getElementById('currentLevelValue').textContent = "等级 " + data.l;
+                if (data.b !== undefined) {
+                    document.getElementById('batteryValue').textContent = data.b + "%";
+                    document.getElementById('settingsBatteryValue').textContent = data.b + "%";
+                }
+            } catch (err) {
+                console.log("[BLE RX TEXT] " + str); // Not JSON
+            }
         }
 
         // Start

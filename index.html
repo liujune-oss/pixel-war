@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Pixel War Control</title>
+
+    <!-- PWA Settings -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0A0A0A">
+
+    <!-- iOS Support -->
+    <link rel="apple-touch-icon" href="icon.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Pixel War">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Manrope:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap"
+        rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --bg-color: #0A0A0A;
+            --surface: #18181B;
+            --surface-hover: #27272A;
+            --surface-pressed: #3F3F46;
+
+            --text-primary: #FFFFFF;
+            --text-secondary: #A1A1AA;
+            --text-muted: #71717A;
+
+            --primary: #C4F82A;
+            --primary-dim: rgba(196, 248, 42, 0.1);
+            --primary-hover: #D4FF4D;
+            --primary-pressed: #A3E635;
+
+            --danger: #EF4444;
+            --danger-dim: rgba(239, 68, 68, 0.1);
+            --warning: #EAB308;
+
+            --border: #27272A;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            font-family: 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif;
+            line-height: 1.5;
+            height: 100vh;
+            height: 100dvh;
+            display: flex;
+            justify-content: center;
+            background-image: radial-gradient(circle at 50% 0%, rgba(196, 248, 42, 0.05) 0%, transparent 50%);
+        }
+
+        #app {
+            width: 100%;
+            max-width: 480px;
+            height: 100%;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .font-grotesk {
+            font-family: 'Space Grotesk', sans-serif;
+        }
+
+        .font-mono {
+            font-family: 'Space Mono', monospace;
+        }
+
+        h1,
+        h2,
+        h3 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 700;
+        }
+
+        /* Screen Management */
+        .screen {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            opacity: 0;
+            pointer-events: none;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s;
+            padding: 0 24px;
+        }
+
+        .screen.active {
+            opacity: 1;
+            pointer-events: auto;
+            visibility: visible;
+            z-index: 10;
+        }
+
+        /* Typography & General */
+        .title {
+            font-size: 24px;
+            margin-bottom: 4px;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 13px;
+        }
+
+        .text-primary {
+            color: var(--primary);
+        }
+
+        .text-white {
+            color: var(--text-primary);
+        }
+
+        .text-yellow {
+            color: var(--warning);
+        }
+
+        .text-dark {
+            color: var(--bg-color);
+        }
+
+        .bg-primary {
+            background-color: var(--primary);
+        }
+
+        .bg-surface {
+            background-color: var(--surface);
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            border-radius: 16px;
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 700;
+            font-size: 16px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            height: 56px;
+        }
+
+        .btn-large {
+            height: 56px;
+            width: 100%;
+            font-size: 18px;
+        }
+
+        .btn-full {
+            width: 100%;
+        }
+
+        .btn-half {
+            flex: 1;
+        }
+
+        .btn-primary {
+            background: linear-gradient(90deg, #C4F82A 0%, #A3E635 100%);
+            color: var(--bg-color);
+            box-shadow: 0 4px 24px rgba(196, 248, 42, 0.25);
+        }
+
+        .btn-primary:active {
+            opacity: 0.8;
+            transform: scale(0.98);
+        }
+
+        .btn-surface {
+            background-color: var(--border);
+            color: var(--text-primary);
+        }
+
+        .btn-danger-outline {
+            background-color: var(--danger-dim);
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            color: var(--danger);
+        }
+
+        .btn-danger-text {
+            background: transparent;
+            color: var(--danger);
+        }
+
+        .btn-icon-small {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            border: none;
+            background-color: var(--surface-hover);
+            color: var(--text-primary);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        /* Connect Screen */
+        #connectScreen {
+            padding: 60px 40px;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-center {
+            text-align: center;
+        }
+
+        .header-center .title {
+            font-size: 40px;
+            margin-bottom: 12px;
+        }
+
+        .header-center .subtitle {
+            font-size: 16px;
+        }
+
+        .ble-center {
+            position: relative;
+            width: 200px;
+            height: 200px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .ring {
+            position: absolute;
+            border-radius: 50%;
+            animation: ripple 3s linear infinite;
+        }
+
+        .ring3 {
+            width: 200px;
+            height: 200px;
+            border: 1px solid var(--border);
+        }
+
+        .ring2 {
+            width: 140px;
+            height: 140px;
+            border: 1.5px solid var(--surface-pressed);
+            animation-delay: 1s;
+        }
+
+        .ring1 {
+            width: 80px;
+            height: 80px;
+            border: 2px solid rgba(196, 248, 42, 0.25);
+            animation-delay: 2s;
+        }
+
+        .ble-circle {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: linear-gradient(180deg, #C4F82A 0%, #87D918 100%);
+            box-shadow: 0 0 40px rgba(196, 248, 42, 0.3);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2;
+        }
+
+        .ble-text {
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: bold;
+            font-size: 16px;
+            color: var(--bg-color);
+        }
+
+        .status-text {
+            color: var(--text-muted);
+            font-size: 16px;
+        }
+
+        .action-area {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .helper-text {
+            color: var(--text-muted);
+            font-size: 13px;
+            text-align: center;
+        }
+
+        @keyframes ripple {
+            0% {
+                transform: scale(0.8);
+                opacity: 0.8;
+            }
+
+            100% {
+                transform: scale(1.2);
+                opacity: 0;
+            }
+        }
+
+        /* Dashboard & Settings Shared */
+        .app-header {
+            padding: 60px 0 16px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .status-badge {
+            height: 44px;
+            padding: 0 16px;
+            border-radius: 22px;
+            background-color: var(--surface);
+            display: flex;
+            align-items: center;
+            border: 1px solid var(--border);
+        }
+
+        .badge-text {
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .content-scroll {
+            flex: 1;
+            overflow-y: auto;
+            padding-bottom: 120px;
+            /* Space for tab bar */
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .content-scroll::-webkit-scrollbar {
+            width: 0;
+        }
+
+        .section-title {
+            font-size: 20px;
+            margin-bottom: 16px;
+        }
+
+        /* Cards */
+        .metrics-row {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .metric-card {
+            flex: 1;
+            border-radius: 16px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .metric-value {
+            font-size: 32px;
+            font-weight: 700;
+        }
+
+        .metric-label {
+            font-size: 14px;
+            font-weight: 700;
+            opacity: 0.8;
+        }
+
+        .difficulty-bar {
+            background-color: rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .diff-label {
+            font-size: 13px;
+            color: var(--text-secondary);
+            font-weight: 700;
+        }
+
+        .diff-value {
+            font-size: 13px;
+        }
+
+        .device-card {
+            border-radius: 20px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .card-padded {
+            gap: 20px;
+        }
+
+        .data-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .data-label {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .data-value {
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        .commands-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .commands-row {
+            display: flex;
+            gap: 12px;
+        }
+
+        /* Form Controls */
+        .control-row {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .control-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .custom-slider {
+            -webkit-appearance: none;
+            appearance: none;
+            flex: 1;
+            height: 6px;
+            border-radius: 3px;
+            background: var(--surface-pressed);
+            outline: none;
+        }
+
+        .custom-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .slider-primary::-webkit-slider-thumb {
+            background: var(--primary);
+        }
+
+        .slider-yellow::-webkit-slider-thumb {
+            background: var(--warning);
+        }
+
+        /* Helper margins */
+        .mt-4 {
+            margin-top: 16px;
+        }
+
+        .mt-8 {
+            margin-top: 32px;
+        }
+
+        /* Tab Bar */
+        .tab-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 16px 24px 32px 24px;
+            background: linear-gradient(to top, var(--bg-color) 60%, transparent);
+            display: flex;
+            justify-content: center;
+            z-index: 100;
+            transition: transform 0.3s ease;
+        }
+
+        .tab-bar.hidden {
+            transform: translateY(100%);
+        }
+
+        .tab-pill {
+            background-color: var(--surface);
+            height: 60px;
+            border-radius: 30px;
+            display: flex;
+            padding: 4px;
+            width: 200px;
+            border: 1px solid var(--border);
+        }
+
+        .tab-btn {
+            flex: 1;
+            border-radius: 26px;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .tab-btn.active {
+            color: var(--primary);
+        }
+
+        .tab-icon {
+            width: 20px;
+            height: 20px;
+        }
+
+        .tab-text {
+            font-size: 11px;
+            font-family: 'Space Grotesk', sans-serif;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        <!-- Connect Screen -->
+        <div id="connectScreen" class="screen active">
+            <div class="header-center">
+                <h1 class="title">Pixel War</h1>
+                <p class="subtitle">ESP32-S3 管理面板</p>
+            </div>
+
+            <div class="ble-center">
+                <div class="ring ring3"></div>
+                <div class="ring ring2"></div>
+                <div class="ring ring1"></div>
+                <div class="ble-circle">
+                    <span class="ble-text">BLE</span>
+                </div>
+            </div>
+
+            <p id="connectionStatusText" class="status-text">搜索 Pixel War 设备...</p>
+
+            <div class="action-area">
+                <button id="btnConnect" class="btn btn-primary btn-large">
+                    <i data-lucide="bluetooth" class="btn-icon"></i>
+                    <span>搜索并连接</span>
+                </button>
+                <p class="helper-text">请确认您的设备电源已开启。</p>
+            </div>
+        </div>
+
+        <!-- Dashboard Screen -->
+        <div id="dashboardScreen" class="screen">
+            <header class="app-header">
+                <div>
+                    <h1 class="title">Pixel War</h1>
+                    <p class="subtitle">ESP32-S3 控制台</p>
+                </div>
+            </header>
+
+            <main class="content-scroll">
+                <!-- Overview Section -->
+                <section class="card-section">
+                    <h2 class="section-title">比赛概况</h2>
+                    <div class="metrics-row">
+                        <div class="metric-card bg-primary text-dark">
+                            <div class="metric-value font-grotesk" id="scoreValue">0</div>
+                            <div class="metric-label">总得分</div>
+                        </div>
+                        <div class="metric-card bg-surface">
+                            <div class="metric-value font-grotesk text-white" id="killsValue">0</div>
+                            <div class="metric-label">击杀数</div>
+                        </div>
+                    </div>
+                    <div class="difficulty-bar">
+                        <span class="diff-label">当前等级</span>
+                        <span class="diff-value font-mono text-yellow" id="currentLevelValue">等级 1</span>
+                    </div>
+                </section>
+
+                <!-- Device Section -->
+                <section class="card-section">
+                    <h2 class="section-title">在线设备</h2>
+                    <div class="device-card bg-surface">
+                        <div class="data-row">
+                            <span class="data-label">连接状态</span>
+                            <span class="data-value font-mono text-primary" id="bleStatus">已连接</span>
+                        </div>
+                        <div class="data-row">
+                            <span class="data-label">当前电量</span>
+                            <span class="data-value font-mono text-white" id="batteryValue">--%</span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Commands Section -->
+                <section class="card-section">
+                    <h2 class="section-title">指令操作</h2>
+                    <div class="commands-stack">
+                        <button id="btnRestartGame" class="btn btn-primary btn-full">
+                            <span>重开游戏</span>
+                        </button>
+                        <div class="commands-row">
+                            <button id="btnStopGame" class="btn btn-danger-outline btn-half">
+                                <span>暂停游戏</span>
+                            </button>
+                            <button id="btnRunDemo" class="btn btn-surface btn-half">
+                                <span>运行演示</span>
+                            </button>
+                        </div>
+                    </div>
+                </section>
+            </main>
+        </div>
+
+        <!-- Settings Screen -->
+        <div id="settingsScreen" class="screen">
+            <header class="app-header">
+                <div>
+                    <h1 class="title">Pixel War</h1>
+                    <p class="subtitle">设备管理控制台</p>
+                </div>
+            </header>
+
+            <main class="content-scroll">
+                <!-- System Status -->
+                <section class="card-section">
+                    <h2 class="section-title">系统状态</h2>
+                    <div class="device-card bg-surface">
+                        <div class="data-row">
+                            <span class="data-label">固件版本</span>
+                            <span class="data-value font-mono text-white" id="fwVersion">v1.2.0</span>
+                        </div>
+                        <div class="data-row">
+                            <span class="data-label">剩余电量</span>
+                            <span class="data-value font-mono text-primary" id="settingsBatteryValue">--%</span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Configuration -->
+                <section class="card-section">
+                    <h2 class="section-title">控制器参数</h2>
+                    <div class="device-card bg-surface card-padded">
+
+                        <!-- LED Brightness -->
+                        <div class="control-row">
+                            <div class="control-header">
+                                <span class="data-label">LED 显示亮度</span>
+                                <span class="data-value font-mono text-primary" id="brightnessValue">80%</span>
+                            </div>
+                            <div class="slider-container">
+                                <button class="btn-icon-small" id="btnBrightnessMinus"><i
+                                        data-lucide="minus"></i></button>
+                                <input type="range" id="brightnessSlider" class="custom-slider slider-primary" min="1"
+                                    max="100" value="80">
+                                <button class="btn-icon-small" id="btnBrightnessPlus"><i
+                                        data-lucide="plus"></i></button>
+                            </div>
+                        </div>
+
+                        <!-- Audio Volume -->
+                        <div class="control-row mt-4">
+                            <div class="control-header">
+                                <span class="data-label">音频播放音量</span>
+                                <span class="data-value font-mono text-primary" id="volumeValue">50%</span>
+                            </div>
+                            <div class="slider-container">
+                                <button class="btn-icon-small" id="btnVolumeMinus"><i data-lucide="minus"></i></button>
+                                <input type="range" id="volumeSlider" class="custom-slider slider-primary" min="0"
+                                    max="10" value="5">
+                                <button class="btn-icon-small" id="btnVolumePlus"><i data-lucide="plus"></i></button>
+                            </div>
+                        </div>
+
+                        <!-- Game Difficulty -->
+                        <div class="control-row mt-4">
+                            <div class="control-header">
+                                <span class="data-label">基础游戏难度</span>
+                                <span class="data-value font-mono text-yellow" id="difficultyLevelStr">中等</span>
+                            </div>
+                            <div class="slider-container">
+                                <input type="range" id="difficultySlider" class="custom-slider slider-yellow" min="1"
+                                    max="14" value="5">
+                            </div>
+                        </div>
+
+                    </div>
+                </section>
+
+                <!-- Danger Zone -->
+                <section class="card-section mt-8">
+                    <button id="btnDisconnect" class="btn btn-danger-text btn-full">
+                        <span>断开蓝牙连接</span>
+                    </button>
+                </section>
+            </main>
+        </div>
+
+        <!-- Tab Bar -->
+        <nav id="tabBar" class="tab-bar hidden">
+            <div class="tab-pill">
+                <button class="tab-btn active" data-target="dashboardScreen">
+                    <i data-lucide="home" class="tab-icon"></i>
+                    <span class="tab-text">首页</span>
+                </button>
+                <button class="tab-btn" data-target="settingsScreen">
+                    <i data-lucide="settings" class="tab-icon"></i>
+                    <span class="tab-text">设置</span>
+                </button>
+            </div>
+        </nav>
+    </div>
+
+    <script>
+        // DOM Elements
+        const connectScreen = document.getElementById('connectScreen');
+        const dashboardScreen = document.getElementById('dashboardScreen');
+        const settingsScreen = document.getElementById('settingsScreen');
+        const tabBar = document.getElementById('tabBar');
+        const btnConnect = document.getElementById('btnConnect');
+        const statusText = document.getElementById('connectionStatusText');
+
+        // UI state
+        let isConnected = false;
+
+        // Initialize app
+        function init() {
+            setupEventListeners();
+            updateMockData();
+        }
+
+        function setupEventListeners() {
+            // Navigation
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const targetId = e.currentTarget.dataset.target;
+                    switchTab(targetId, e.currentTarget);
+                });
+            });
+
+            // Connection flow (Mock)
+            btnConnect.addEventListener('click', () => {
+                statusText.textContent = "Connecting...";
+
+                // Mock connection delay
+                setTimeout(() => {
+                    isConnected = true;
+                    statusText.textContent = "Connected successfully!";
+
+                    // Switch to Dashboard
+                    setTimeout(() => {
+                        showApp();
+                    }, 500);
+                }, 1500);
+            });
+
+            // Device commands log
+            document.getElementById('btnRestartGame').addEventListener('click', () => console.log('Command: Restart Game'));
+            document.getElementById('btnStopGame').addEventListener('click', () => console.log('Command: Stop Game'));
+            document.getElementById('btnRunDemo').addEventListener('click', () => console.log('Command: Run Demo'));
+            document.getElementById('btnDisconnect').addEventListener('click', () => {
+                isConnected = false;
+                showConnectScreen();
+            });
+
+            // Sliders
+            setupSlider('brightnessSlider', 'brightnessValue', '%');
+            setupSlider('volumeSlider', 'volumeValue', '%', (val) => val * 10); // 0-10 to 0-100%
+            setupSlider('difficultySlider', 'difficultyLevelStr', '', (val) => getDifficultyString(val));
+
+            // Slider buttons
+            setupSliderButtons('brightnessSlider', 'btnBrightnessMinus', 'btnBrightnessPlus', 5);
+            setupSliderButtons('volumeSlider', 'btnVolumeMinus', 'btnVolumePlus', 1);
+        }
+
+        function showApp() {
+            connectScreen.classList.remove('active');
+            dashboardScreen.classList.add('active');
+            tabBar.classList.remove('hidden');
+
+            // Reset tabs
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelector('[data-target="dashboardScreen"]').classList.add('active');
+        }
+
+        function showConnectScreen() {
+            dashboardScreen.classList.remove('active');
+            settingsScreen.classList.remove('active');
+            tabBar.classList.add('hidden');
+            connectScreen.classList.add('active');
+            statusText.textContent = "搜索 Pixel War 设备...";
+        }
+
+        function switchTab(targetId, activeBtn) {
+            // Update buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            activeBtn.classList.add('active');
+
+            // Update screens
+            dashboardScreen.classList.remove('active');
+            settingsScreen.classList.remove('active');
+            document.getElementById(targetId).classList.add('active');
+        }
+
+        function setupSlider(sliderId, valueId, suffix, transformFn = null) {
+            const slider = document.getElementById(sliderId);
+            const valueDisplay = document.getElementById(valueId);
+
+            slider.addEventListener('input', (e) => {
+                let val = e.target.value;
+                if (transformFn) {
+                    val = transformFn(val);
+                }
+                valueDisplay.textContent = val + suffix;
+            });
+        }
+
+        function setupSliderButtons(sliderId, minusId, plusId, step) {
+            const slider = document.getElementById(sliderId);
+
+            document.getElementById(minusId).addEventListener('click', () => {
+                slider.value = Math.max(parseInt(slider.min), parseInt(slider.value) - step);
+                slider.dispatchEvent(new Event('input'));
+            });
+
+            document.getElementById(plusId).addEventListener('click', () => {
+                slider.value = Math.min(parseInt(slider.max), parseInt(slider.value) + step);
+                slider.dispatchEvent(new Event('input'));
+            });
+        }
+
+        function getDifficultyString(level) {
+            if (level <= 4) return "简单 (Level " + level + ")";
+            if (level <= 9) return "中等 (Level " + level + ")";
+            if (level <= 13) return "困难 (Level " + level + ")";
+            return "极难 (Level " + level + ")";
+        }
+
+        function updateMockData() {
+            // Populate some initial mock values
+            document.getElementById('scoreValue').textContent = "12,450";
+            document.getElementById('killsValue').textContent = "84";
+            document.getElementById('currentLevelValue').textContent = "等级 5";
+            document.getElementById('batteryValue').textContent = "85%";
+            document.getElementById('settingsBatteryValue').textContent = "85%";
+        }
+
+        // Start
+        init();
+
+        // Register Service Worker for PWA
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(registration => {
+                        console.log('SW registered with scope:', registration.scope);
+                    })
+                    .catch(err => {
+                        console.error('SW registration failed:', err);
+                    });
+            });
+        }
+    </script>
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+
+</html>

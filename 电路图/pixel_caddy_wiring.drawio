@@ -1,0 +1,395 @@
+<mxfile host="65bd71144e">
+    <diagram name="Pixel Caddy Wiring - ESP32-S3" id="pixel-caddy-s3">
+        <mxGraphModel dx="775" dy="498" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="title" value="Pixel Caddy 硬件连接图 (ESP32-S3 Version)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=20;fontStyle=1" parent="1" vertex="1">
+                    <mxGeometry x="320" y="20" width="530" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="ip5306-box" value="IP5306 电源管理芯片" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=14;fontStyle=1;verticalAlign=top;fontColor=#333333;" parent="1" vertex="1">
+                    <mxGeometry x="80" y="100" width="280" height="320" as="geometry"/>
+                </mxCell>
+                <mxCell id="usb" value="USB Type-C" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontColor=#333333;" parent="1" vertex="1">
+                    <mxGeometry x="40" y="200" width="100" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="ip-vin" value="VIN (Pin 7)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontColor=#333333;" parent="1" vertex="1">
+                    <mxGeometry x="160" y="140" width="80" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="ip-sw" value="SW (Pin 8)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontColor=#333333;" parent="1" vertex="1">
+                    <mxGeometry x="160" y="180" width="80" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="ip-bat" value="BAT (Pin 2/3)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontColor=#333333;" parent="1" vertex="1">
+                    <mxGeometry x="160" y="220" width="80" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="ip-key" value="KEY (Pin 5)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontColor=#333333;" parent="1" vertex="1">
+                    <mxGeometry x="160" y="260" width="80" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="ip-vout" value="VOUT (Pin 1)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontColor=#333333;" parent="1" vertex="1">
+                    <mxGeometry x="160" y="300" width="80" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="battery" value="3.7V 锂电池" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontColor=#333333;" parent="1" vertex="1">
+                    <mxGeometry x="280" y="215" width="60" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="inductor" value="L1&#10;2.2uH" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontColor=#333333;" parent="1" vertex="1">
+                    <mxGeometry x="260" y="175" width="60" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="power-btn" value="电源按键" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontColor=#333333;" parent="1" vertex="1">
+                    <mxGeometry x="100" y="265" width="50" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="cap-bat" value="10uF" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontColor=#333333;" parent="1" vertex="1">
+                    <mxGeometry x="280" y="260" width="40" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="cap-vout" value="22uF" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontColor=#333333;" parent="1" vertex="1">
+                    <mxGeometry x="280" y="300" width="40" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="5v-bus" value="SYS_5V 总线" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffcc99;strokeColor=#FF6600;fontStyle=1;fontSize=12;fontColor=#333333;" parent="1" vertex="1">
+                    <mxGeometry x="160" y="360" width="120" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="mcu-box" value="Seeed Studio XIAO ESP32-S3" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=14;fontStyle=1;verticalAlign=top;fontColor=#333333;" parent="1" vertex="1">
+                    <mxGeometry x="440" y="100" width="280" height="320" as="geometry"/>
+                </mxCell>
+                <mxCell id="xiao-board" value="XIAO 开发板" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;fontStyle=1;fontColor=#333333;" parent="1" vertex="1">
+                    <mxGeometry x="500" y="140" width="160" height="200" as="geometry"/>
+                </mxCell>
+                <mxCell id="xiao-5v" value="5V" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffcc99;strokeColor=#FF6600;fontColor=#333333;" parent="1" vertex="1">
+                    <mxGeometry x="460" y="160" width="30" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="xiao-gnd" value="GND" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#333333;strokeColor=#000000;fontColor=#FFFFFF;" parent="1" vertex="1">
+                    <mxGeometry x="460" y="190" width="30" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="xiao-d9" value="D9" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#b1ddf0;strokeColor=#10739e;fontColor=#333333;" parent="1" vertex="1">
+                    <mxGeometry x="670" y="160" width="30" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="xiao-d2" value="D2" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#b1ddf0;strokeColor=#10739e;fontColor=#333333;" parent="1" vertex="1">
+                    <mxGeometry x="670" y="190" width="30" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="xiao-d0" value="D0" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#b1ddf0;strokeColor=#10739e;fontColor=#333333;" parent="1" vertex="1">
+                    <mxGeometry x="670" y="220" width="30" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="xiao-d1" value="D1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#b1ddf0;strokeColor=#10739e;fontColor=#333333;" parent="1" vertex="1">
+                    <mxGeometry x="670" y="250" width="30" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="xiao-d6" value="D6" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#b1ddf0;strokeColor=#10739e;fontColor=#333333;" parent="1" vertex="1">
+                    <mxGeometry x="670" y="280" width="30" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="gpio9-label" value="GPIO 9" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="520" y="160" width="50" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="gpio4-label" value="GPIO 4" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="520" y="190" width="50" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="gpio2-label" value="GPIO 2" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="520" y="220" width="50" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="gpio3-label" value="GPIO 3" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="520" y="250" width="50" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="gpio43-label" value="GPIO 43" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="520" y="280" width="60" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="peripherals-box" value="外设模块" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=14;fontStyle=1;verticalAlign=top;fontColor=#333333;" parent="1" vertex="1">
+                    <mxGeometry x="800" y="100" width="320" height="500" as="geometry"/>
+                </mxCell>
+                <mxCell id="led-matrix" value="WS2812 LED 矩阵&#10;16x16" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=12;fontStyle=1;fontColor=#333333;" parent="1" vertex="1">
+                    <mxGeometry x="840" y="140" width="120" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="led-vcc" value="VCC" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffcc99;strokeColor=#FF6600;fontSize=10;fontColor=#333333;" parent="1" vertex="1">
+                    <mxGeometry x="820" y="150" width="30" height="15" as="geometry"/>
+                </mxCell>
+                <mxCell id="led-din" value="DIN" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#b1ddf0;strokeColor=#10739e;fontSize=10;fontColor=#333333;" parent="1" vertex="1">
+                    <mxGeometry x="820" y="170" width="30" height="15" as="geometry"/>
+                </mxCell>
+                <mxCell id="led-gnd" value="GND" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#333333;strokeColor=#000000;fontColor=#FFFFFF;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="820" y="190" width="30" height="15" as="geometry"/>
+                </mxCell>
+                <mxCell id="cap-1000uf" value="1000uF&#10;电解电容" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontColor=#333333;" parent="1" vertex="1">
+                    <mxGeometry x="980" y="145" width="80" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="btn-good" value="绿键 (Good)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5f4e6;strokeColor=#82b366;fontSize=11;fontStyle=1;fontColor=#333333;" parent="1" vertex="1">
+                    <mxGeometry x="840" y="240" width="100" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="btn-normal" value="黄键 (Normal)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff4e6;strokeColor=#d6b656;fontSize=11;fontStyle=1;fontColor=#333333;" parent="1" vertex="1">
+                    <mxGeometry x="840" y="280" width="100" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="btn-bad" value="红键 (Bad)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;fontStyle=1;fontColor=#333333;" parent="1" vertex="1">
+                    <mxGeometry x="840" y="320" width="100" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="buzzer-circuit" value="蜂鸣器驱动电路" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=11;fontStyle=1;verticalAlign=top;fontColor=#333333;" parent="1" vertex="1">
+                    <mxGeometry x="840" y="380" width="240" height="180" as="geometry"/>
+                </mxCell>
+                <mxCell id="resistor-1k" value="1kΩ 电阻" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;fontColor=#333333;" parent="1" vertex="1">
+                    <mxGeometry x="860" y="420" width="60" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="npn-transistor" value="NPN 三极管&#10;(2N2222/S8050)" style="triangle;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=10;rotation=90;fontColor=#333333;" parent="1" vertex="1">
+                    <mxGeometry x="935" y="420" width="60" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="buzzer" value="无源蜂鸣器" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;fontColor=#333333;" parent="1" vertex="1">
+                    <mxGeometry x="1000" y="420" width="60" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="gnd-symbol" value="GND (公共地)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#333333;strokeColor=#000000;fontColor=#FFFFFF;fontSize=12;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="440" y="640" width="280" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="conn1" value="" style="endArrow=classic;html=1;strokeWidth=2;strokeColor=#FF6600;" parent="1" source="usb" target="ip-vin" edge="1">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry">
+                        <mxPoint x="400" y="300" as="sourcePoint"/>
+                        <mxPoint x="450" y="250" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="conn1-label" value="5V" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;fontColor=#FF6600;fontStyle=1" parent="conn1" vertex="1" connectable="0">
+                    <mxGeometry x="-0.2" y="1" relative="1" as="geometry">
+                        <mxPoint as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="conn2" value="" style="endArrow=classic;html=1;strokeWidth=2;strokeColor=#82b366;" parent="1" source="ip-sw" target="inductor" edge="1">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry">
+                        <mxPoint x="400" y="300" as="sourcePoint"/>
+                        <mxPoint x="450" y="250" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="conn3" value="" style="endArrow=classic;html=1;strokeWidth=2;strokeColor=#82b366;startArrow=classic;startFill=1;" parent="1" source="inductor" target="ip-bat" edge="1">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry">
+                        <mxPoint x="400" y="300" as="sourcePoint"/>
+                        <mxPoint x="450" y="250" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="conn4" value="" style="endArrow=classic;html=1;strokeWidth=2;strokeColor=#b85450;startArrow=classic;startFill=1;" parent="1" source="ip-bat" target="battery" edge="1">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry">
+                        <mxPoint x="400" y="300" as="sourcePoint"/>
+                        <mxPoint x="450" y="250" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="conn5" value="" style="endArrow=classic;html=1;strokeWidth=1;strokeColor=#82b366;" parent="1" source="ip-bat" target="cap-bat" edge="1">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry">
+                        <mxPoint x="400" y="300" as="sourcePoint"/>
+                        <mxPoint x="450" y="250" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="conn6" value="" style="endArrow=classic;html=1;strokeWidth=1;strokeColor=#d6b656;" parent="1" source="ip-key" target="power-btn" edge="1">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry">
+                        <mxPoint x="400" y="300" as="sourcePoint"/>
+                        <mxPoint x="450" y="250" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="conn7" value="" style="endArrow=classic;html=1;strokeWidth=1;strokeColor=#82b366;" parent="1" source="ip-vout" target="cap-vout" edge="1">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry">
+                        <mxPoint x="400" y="300" as="sourcePoint"/>
+                        <mxPoint x="450" y="250" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="conn8" value="" style="endArrow=classic;html=1;strokeWidth=3;strokeColor=#FF6600;" parent="1" source="ip-vout" target="5v-bus" edge="1">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry">
+                        <mxPoint x="400" y="300" as="sourcePoint"/>
+                        <mxPoint x="450" y="250" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="conn8-label" value="5V" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=11;fontColor=#FF6600;fontStyle=1" parent="conn8" vertex="1" connectable="0">
+                    <mxGeometry x="-0.2" y="1" relative="1" as="geometry">
+                        <mxPoint as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="conn9" value="" style="endArrow=classic;html=1;strokeWidth=3;strokeColor=#FF6600;" parent="1" source="5v-bus" target="xiao-5v" edge="1">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry">
+                        <mxPoint x="400" y="300" as="sourcePoint"/>
+                        <mxPoint x="450" y="250" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="conn10" value="" style="endArrow=classic;html=1;strokeWidth=3;strokeColor=#FF6600;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" parent="1" source="5v-bus" target="led-vcc" edge="1">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry">
+                        <mxPoint x="400" y="300" as="sourcePoint"/>
+                        <mxPoint x="450" y="250" as="targetPoint"/>
+                        <Array as="points">
+                            <mxPoint x="380" y="380"/>
+                            <mxPoint x="380" y="80"/>
+                            <mxPoint x="780" y="80"/>
+                            <mxPoint x="780" y="158"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="conn11" value="" style="endArrow=classic;html=1;strokeWidth=2;strokeColor=#10739e;" parent="1" source="xiao-d9" target="led-din" edge="1">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry">
+                        <mxPoint x="400" y="300" as="sourcePoint"/>
+                        <mxPoint x="450" y="250" as="targetPoint"/>
+                        <Array as="points">
+                            <mxPoint x="760" y="170"/>
+                            <mxPoint x="760" y="178"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="conn11-label" value="Data" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;fontColor=#10739e;" parent="conn11" vertex="1" connectable="0">
+                    <mxGeometry x="-0.2" y="1" relative="1" as="geometry">
+                        <mxPoint x="5" y="-5" as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="conn12" value="" style="endArrow=classic;html=1;strokeWidth=1.5;strokeColor=#82b366;" parent="1" source="xiao-d2" target="btn-good" edge="1">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry">
+                        <mxPoint x="400" y="300" as="sourcePoint"/>
+                        <mxPoint x="450" y="250" as="targetPoint"/>
+                        <Array as="points">
+                            <mxPoint x="760" y="200"/>
+                            <mxPoint x="760" y="255"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="conn13" value="" style="endArrow=classic;html=1;strokeWidth=1.5;strokeColor=#d6b656;" parent="1" source="xiao-d0" target="btn-normal" edge="1">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry">
+                        <mxPoint x="400" y="300" as="sourcePoint"/>
+                        <mxPoint x="450" y="250" as="targetPoint"/>
+                        <Array as="points">
+                            <mxPoint x="760" y="230"/>
+                            <mxPoint x="760" y="295"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="conn14" value="" style="endArrow=classic;html=1;strokeWidth=1.5;strokeColor=#b85450;" parent="1" source="xiao-d1" target="btn-bad" edge="1">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry">
+                        <mxPoint x="400" y="300" as="sourcePoint"/>
+                        <mxPoint x="450" y="250" as="targetPoint"/>
+                        <Array as="points">
+                            <mxPoint x="760" y="260"/>
+                            <mxPoint x="760" y="335"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="conn15" value="" style="endArrow=classic;html=1;strokeWidth=1.5;strokeColor=#666666;" parent="1" source="xiao-d6" target="resistor-1k" edge="1">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry">
+                        <mxPoint x="400" y="300" as="sourcePoint"/>
+                        <mxPoint x="450" y="250" as="targetPoint"/>
+                        <Array as="points">
+                            <mxPoint x="760" y="290"/>
+                            <mxPoint x="760" y="430"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="conn15-label" value="GPIO 43" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;" parent="conn15" vertex="1" connectable="0">
+                    <mxGeometry x="-0.2" y="1" relative="1" as="geometry">
+                        <mxPoint x="10" y="30" as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="conn16" value="" style="endArrow=classic;html=1;strokeWidth=1.5;strokeColor=#666666;" parent="1" source="resistor-1k" target="npn-transistor" edge="1">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry">
+                        <mxPoint x="400" y="300" as="sourcePoint"/>
+                        <mxPoint x="450" y="250" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="conn17" value="" style="endArrow=classic;html=1;strokeWidth=2;strokeColor=#d6b656;" parent="1" source="npn-transistor" target="buzzer" edge="1">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry">
+                        <mxPoint x="400" y="300" as="sourcePoint"/>
+                        <mxPoint x="450" y="250" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="buzz-5v-label" value="5V" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=10;fontColor=#FF6600;fontStyle=1" parent="1" vertex="1">
+                    <mxGeometry x="1060" y="420" width="30" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="npn-gnd-label" value="GND" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=10;fontColor=#333333;fontStyle=1" parent="1" vertex="1">
+                    <mxGeometry x="940" y="510" width="40" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="btn-gnd-label1" value="GND" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=9;fontColor=#333333;" parent="1" vertex="1">
+                    <mxGeometry x="950" y="245" width="30" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="btn-gnd-label2" value="GND" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=9;fontColor=#333333;" parent="1" vertex="1">
+                    <mxGeometry x="950" y="285" width="30" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="btn-gnd-label3" value="GND" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=9;fontColor=#333333;" parent="1" vertex="1">
+                    <mxGeometry x="950" y="325" width="30" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="led-gnd-conn" value="" style="endArrow=none;html=1;strokeWidth=2;strokeColor=#333333;exitX=0;exitY=0.5;exitDx=0;exitDy=0;" parent="1" source="led-gnd" edge="1">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry">
+                        <mxPoint x="400" y="300" as="sourcePoint"/>
+                        <mxPoint x="780" y="198" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="cap-conn1" value="" style="endArrow=none;html=1;strokeWidth=2;strokeColor=#FF6600;exitX=0.5;exitY=0;exitDx=0;exitDy=0;" parent="1" source="cap-1000uf" edge="1">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry">
+                        <mxPoint x="400" y="300" as="sourcePoint"/>
+                        <mxPoint x="1020" y="80" as="targetPoint"/>
+                        <Array as="points">
+                            <mxPoint x="1020" y="80"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="cap-conn2" value="" style="endArrow=none;html=1;strokeWidth=2;strokeColor=#333333;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" parent="1" source="cap-1000uf" edge="1">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry">
+                        <mxPoint x="400" y="300" as="sourcePoint"/>
+                        <mxPoint x="1020" y="620" as="targetPoint"/>
+                        <Array as="points">
+                            <mxPoint x="1020" y="620"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="gnd-conn1" value="" style="endArrow=none;html=1;strokeWidth=2;strokeColor=#333333;" parent="1" source="xiao-gnd" target="gnd-symbol" edge="1">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry">
+                        <mxPoint x="400" y="300" as="sourcePoint"/>
+                        <mxPoint x="450" y="250" as="targetPoint"/>
+                        <Array as="points">
+                            <mxPoint x="475" y="200"/>
+                            <mxPoint x="475" y="620"/>
+                            <mxPoint x="520" y="620"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="gnd-conn2" value="" style="endArrow=none;html=1;strokeWidth=2;strokeColor=#333333;" parent="1" source="power-btn" target="gnd-symbol" edge="1">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry">
+                        <mxPoint x="400" y="300" as="sourcePoint"/>
+                        <mxPoint x="450" y="250" as="targetPoint"/>
+                        <Array as="points">
+                            <mxPoint x="60" y="275"/>
+                            <mxPoint x="60" y="620"/>
+                            <mxPoint x="440" y="620"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="gnd-conn3" value="" style="endArrow=none;html=1;strokeWidth=2;strokeColor=#333333;" parent="1" source="cap-bat" edge="1">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry">
+                        <mxPoint x="400" y="300" as="sourcePoint"/>
+                        <mxPoint x="340" y="620" as="targetPoint"/>
+                        <Array as="points">
+                            <mxPoint x="300" y="300"/>
+                            <mxPoint x="340" y="300"/>
+                            <mxPoint x="340" y="620"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="gnd-conn4" value="" style="endArrow=none;html=1;strokeWidth=2;strokeColor=#333333;" parent="1" source="cap-vout" edge="1">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry">
+                        <mxPoint x="400" y="300" as="sourcePoint"/>
+                        <mxPoint x="340" y="620" as="targetPoint"/>
+                        <Array as="points">
+                            <mxPoint x="300" y="330"/>
+                            <mxPoint x="340" y="330"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="gnd-conn5" value="" style="endArrow=none;html=1;strokeWidth=2;strokeColor=#333333;" parent="1" source="battery" edge="1">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry">
+                        <mxPoint x="400" y="300" as="sourcePoint"/>
+                        <mxPoint x="340" y="620" as="targetPoint"/>
+                        <Array as="points">
+                            <mxPoint x="310" y="270"/>
+                            <mxPoint x="340" y="270"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="gnd-conn6" value="" style="endArrow=none;html=1;strokeWidth=2;strokeColor=#333333;" parent="1" edge="1">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry">
+                        <mxPoint x="780" y="198" as="sourcePoint"/>
+                        <mxPoint x="780" y="620" as="targetPoint"/>
+                        <Array as="points">
+                            <mxPoint x="780" y="620"/>
+                            <mxPoint x="710" y="650"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="note1" value="⚠️ 核心差异: ESP32-C3 使用 GPIO 21, ESP32-S3 使用 GPIO 43" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;fontStyle=2;align=left;fontColor=#333333;" parent="1" vertex="1">
+                    <mxGeometry x="840" y="570" width="240" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="note2" value="💡 所有按键使用内部上拉电阻，按下时接地" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;fontStyle=2;align=left;fontColor=#333333;" parent="1" vertex="1">
+                    <mxGeometry x="980" y="240" width="140" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="note3" value="⚡ 1000uF 电容用于稳定 LED 矩阵供电" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;fontStyle=2;align=left;fontColor=#333333;" parent="1" vertex="1">
+                    <mxGeometry x="980" y="300" width="140" height="40" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>

@@ -1,0 +1,23 @@
+# PlatformIO
+.pio/
+.vscode/
+
+# Build artifacts
+.elf
+.bin
+.map
+.hex
+build/
+pixel_war/build/
+
+# OS files
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Logs
+*.log
+
+# Secrets
+secrets.h
+pixel_war/secrets.h

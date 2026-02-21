@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pixelwar-cache-v1';
+const CACHE_NAME = 'pixelwar-cache-v2';
 const urlsToCache = [
     './',
     './index.html',
@@ -6,6 +6,8 @@ const urlsToCache = [
 ];
 
 self.addEventListener('install', event => {
+    // Force the waiting service worker to become the active service worker.
+    self.skipWaiting();
     event.waitUntil(
         caches.open(CACHE_NAME)
             .then(cache => {
@@ -15,21 +17,31 @@ self.addEventListener('install', event => {
 });
 
 self.addEventListener('fetch', event => {
+    // Network-First strategy for all requests
     event.respondWith(
-        caches.match(event.request)
+        fetch(event.request)
             .then(response => {
-                // Cache hit - return response
-                if (response) {
-                    return response;
+                // Network was successful, update the cache with the fresh response
+                if (response && response.status === 200 && response.type === 'basic') {
+                    const responseClone = response.clone();
+                    caches.open(CACHE_NAME).then(cache => {
+                        cache.put(event.request, responseClone);
+                    });
                 }
-                return fetch(event.request).catch(() => {
-                    // Fallback for offline if the request fails
+                return response;
+            })
+            .catch(() => {
+                // Network failed (offline), try the cache
+                return caches.match(event.request).then(cachedResponse => {
+                    if (cachedResponse) {
+                        return cachedResponse;
+                    }
+                    // Fallback to index.html for navigations
                     if (event.request.mode === 'navigate') {
                         return caches.match('./index.html');
                     }
                 });
-            }
-            )
+            })
     );
 });
 

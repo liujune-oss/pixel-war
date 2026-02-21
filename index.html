@@ -766,7 +766,7 @@
         // 全局配置区 - 方便修改APP信息
         // ==========================================
         const APP_CONFIG = {
-            version: "v1.1.3", // 修改此处的字符串即可更新网页显示的版本号
+            version: "v1.2.0", // 修改此处的字符串即可更新网页显示的版本号
         };
 
         // DOM Elements
@@ -1025,6 +1025,9 @@
 
                 // 处理硬件发来的初始配置同步
                 if (data.type === "sync") {
+                    if (data.fw !== undefined) {
+                        document.getElementById('fwVersion').textContent = data.fw;
+                    }
                     if (data.brt !== undefined) {
                         const s = document.getElementById('brightnessSlider');
                         s.value = data.brt;

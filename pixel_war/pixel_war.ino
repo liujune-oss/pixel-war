@@ -237,10 +237,10 @@ class RxCallbacks : public BLECharacteristicCallbacks {
         isDemoMode = true;
         initGame();
       } else if (value == "SYNC") {
-        String json =
-            "{\"type\":\"sync\",\"brt\":" + String(currentBrightness) +
-            ",\"vol\":" + String(currentVolume) +
-            ",\"diff\":" + String(difficulty) + "}";
+        String json = "{\"type\":\"sync\",\"fw\":\"" + String(FW_VERSION) +
+                      "\",\"brt\":" + String(currentBrightness) +
+                      ",\"vol\":" + String(currentVolume) +
+                      ",\"diff\":" + String(difficulty) + "}";
         pTxCharacteristic->setValue((uint8_t *)json.c_str(), json.length());
         pTxCharacteristic->notify();
       } else if (value.startsWith("B:")) {
@@ -1177,28 +1177,50 @@ void loop() {
 
       // ================= [NEW] 试玩模式 AI 自动射击 =================
       if (isDemoMode && !isPaused) {
-        static unsigned long lastAiShot = 0;
-        // 试玩模式的 AI 射击冷却，随难度加快以应付更多敌人
-        unsigned long aiCooldown = max(300, 800 - difficulty * 50);
-        if (now - lastAiShot > aiCooldown) {
-          int closestEnemyDist = 999;
-          int targetColor = 0;
+        // 神仙
+        // AI：不看冷却，只要发射跑道空出，并且存在未被分配子弹的敌人，立刻按出兵顺序发射精准克制子弹。
+        int activeBullets = 0;
+        int enemyPositions[MAX_PIXELS];
+        int enemyColors[MAX_PIXELS];
+        int enemyCount = 0;
 
-          // 寻找最靠近玩家的敌人
-          for (int i = 0; i < MAX_PIXELS; i++) {
-            if (pixels[i].active && pixels[i].isEnemy) {
-              if (pixels[i].position < closestEnemyDist) {
-                closestEnemyDist = pixels[i].position;
-                targetColor = pixels[i].color;
+        for (int i = 0; i < MAX_PIXELS; i++) {
+          if (pixels[i].active) {
+            if (!pixels[i].isEnemy) {
+              activeBullets++;
+            } else {
+              enemyPositions[enemyCount] = pixels[i].position;
+              enemyColors[enemyCount] = pixels[i].color;
+              enemyCount++;
+            }
+          }
+        }
+
+        // 如果有还没有对应子弹的敌人
+        if (activeBullets < enemyCount) {
+          // 对敌人按位置从小到大排序 (离玩家最近的排在前面) (冒泡排序)
+          for (int i = 0; i < enemyCount - 1; i++) {
+            for (int j = 0; j < enemyCount - i - 1; j++) {
+              if (enemyPositions[j] > enemyPositions[j + 1]) {
+                // 交换位置
+                int tempP = enemyPositions[j];
+                enemyPositions[j] = enemyPositions[j + 1];
+                enemyPositions[j + 1] = tempP;
+                // 交换颜色
+                int tempC = enemyColors[j];
+                enemyColors[j] = enemyColors[j + 1];
+                enemyColors[j + 1] = tempC;
               }
             }
           }
 
-          // 当敌人逼近到一定距离时开火 (SPAWN_POS = 179)，增加容错表现距离
-          if (closestEnemyDist < SPAWN_POS - 20) {
-            spawnBullet(targetColor);
-            lastAiShot = now;
-          }
+          // 第 activeBullets 个敌人就是当前尚未被子弹瞄准的最前线敌人
+          // 因为前面 activeBullets 个敌人已经被目前战场上同等数量的子弹“预定”了
+          int targetColor = enemyColors[activeBullets];
+
+          // 尝试开火 (spawnBullet 自带发射口拥堵检测，如果发射口被占据会自己
+          // return，完美充当自动火力限制器)
+          spawnBullet(targetColor);
         }
       }
     }

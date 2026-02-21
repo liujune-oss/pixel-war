@@ -603,8 +603,24 @@
             </header>
 
             <main class="content-scroll">
-                <!-- Overview Section -->
+                <!-- Active Game Section -->
                 <section class="card-section">
+                    <h2 class="section-title">当前运行游戏</h2>
+                    <div class="device-card bg-surface"
+                        style="border: 1px solid var(--primary); background: linear-gradient(145deg, rgba(196,248,42,0.05) 0%, rgba(24,24,27,1) 100%);">
+                        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+                            <div class="bg-primary" style="width: 8px; height: 32px; border-radius: 4px;"></div>
+                            <h3 style="font-size: 20px; font-weight: 700; color: var(--text-primary);"
+                                id="activeGameTitle">光线消消乐</h3>
+                        </div>
+                        <p style="color: var(--text-secondary); font-size: 14px; line-height: 1.5;" id="activeGameDesc">
+                            按颜色消除向你逼近的敌人。
+                        </p>
+                    </div>
+                </section>
+
+                <!-- Overview Section -->
+                <section class="card-section mt-4">
                     <h2 class="section-title">比赛概况</h2>
                     <div class="metrics-row">
                         <div class="metric-card bg-primary text-dark">
@@ -697,7 +713,7 @@
                             <div class="slider-container">
                                 <button class="btn-icon-small" id="btnBrightnessMinus"><i
                                         data-lucide="minus"></i></button>
-                                <input type="range" id="brightnessSlider" class="custom-slider slider-primary" min="1"
+                                <input type="range" id="brightnessSlider" class="custom-slider slider-primary" min="5"
                                     max="100" value="80">
                                 <button class="btn-icon-small" id="btnBrightnessPlus"><i
                                         data-lucide="plus"></i></button>
@@ -746,12 +762,75 @@
             </main>
         </div>
 
+        <!-- Games Library Screen -->
+        <div id="gamesScreen" class="screen">
+            <header class="app-header">
+                <div>
+                    <h1 class="title">游戏引擎</h1>
+                    <p class="subtitle">选择你想启动的游戏</p>
+                </div>
+            </header>
+
+            <main class="content-scroll pb-24">
+                <!-- Game 1: Light Beam -->
+                <section class="card-section">
+                    <div class="device-card bg-surface game-card" data-mode="0">
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
+                            <div>
+                                <h3
+                                    style="font-size: 20px; font-weight: 700; color: var(--primary); margin-bottom: 4px;">
+                                    光线消消乐</h3>
+                                <p style="color: var(--text-secondary); font-size: 13px;">Light Beam Elimination</p>
+                            </div>
+                            <i data-lucide="zap" style="color: var(--primary);"></i>
+                        </div>
+                        <p
+                            style="color: var(--text-secondary); font-size: 14px; line-height: 1.5; margin-bottom: 20px;">
+                            按颜色消除向你逼近的敌人，撑到最后即可过关。
+                        </p>
+                        <button class="btn btn-primary btn-full launch-btn" data-mode="0">
+                            <i data-lucide="play" class="btn-icon"></i>
+                            <span class="launch-btn-text">运行中</span>
+                        </button>
+                    </div>
+                </section>
+
+                <!-- Game 2: Snake (Coming Soon) -->
+                <section class="card-section mt-4">
+                    <div class="device-card bg-surface" style="opacity: 0.5;">
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
+                            <div>
+                                <h3
+                                    style="font-size: 20px; font-weight: 700; color: var(--text-primary); margin-bottom: 4px;">
+                                    贪吃蛇 (敬请期待)</h3>
+                                <p style="color: var(--text-secondary); font-size: 13px;">Classic Snake</p>
+                            </div>
+                            <i data-lucide="clock" style="color: var(--text-secondary);"></i>
+                        </div>
+                        <p
+                            style="color: var(--text-secondary); font-size: 14px; line-height: 1.5; margin-bottom: 20px;">
+                            经典的贪吃蛇游戏，即将通过 OTA 更新加入！
+                        </p>
+                        <button class="btn btn-surface btn-full" disabled>
+                            <span>未解锁</span>
+                        </button>
+                    </div>
+                </section>
+            </main>
+        </div>
+
         <!-- Tab Bar -->
         <nav id="tabBar" class="tab-bar hidden">
             <div class="tab-pill">
                 <button class="tab-btn active" data-target="dashboardScreen">
                     <i data-lucide="home" class="tab-icon"></i>
                     <span class="tab-text">首页</span>
+                </button>
+                <button class="tab-btn" data-target="gamesScreen">
+                    <i data-lucide="gamepad-2" class="tab-icon"></i>
+                    <span class="tab-text">游戏库</span>
                 </button>
                 <button class="tab-btn" data-target="settingsScreen">
                     <i data-lucide="settings" class="tab-icon"></i>
@@ -772,6 +851,7 @@
         // DOM Elements
         const connectScreen = document.getElementById('connectScreen');
         const dashboardScreen = document.getElementById('dashboardScreen');
+        const gamesScreen = document.getElementById('gamesScreen');
         const settingsScreen = document.getElementById('settingsScreen');
         const tabBar = document.getElementById('tabBar');
         const btnConnect = document.getElementById('btnConnect');
@@ -807,6 +887,19 @@
                 btn.addEventListener('click', (e) => {
                     const targetId = e.currentTarget.dataset.target;
                     switchTab(targetId, e.currentTarget);
+                });
+            });
+
+            // Game Library launch buttons
+            document.querySelectorAll('.launch-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const mode = e.currentTarget.dataset.mode;
+                    sendDataToESP32('MODE:' + mode);
+                    updateActiveGameUI(parseInt(mode));
+
+                    // Switch back to dashboard implicitly via UI click simulation
+                    const dashBtn = document.querySelector('[data-target="dashboardScreen"]');
+                    switchTab('dashboardScreen', dashBtn);
                 });
             });
 
@@ -912,6 +1005,7 @@
 
             // Update screens
             dashboardScreen.classList.remove('active');
+            gamesScreen.classList.remove('active');
             settingsScreen.classList.remove('active');
             document.getElementById(targetId).classList.add('active');
         }
@@ -956,6 +1050,40 @@
             if (level <= 9) return "中等 (Level " + level + ")";
             if (level <= 13) return "困难 (Level " + level + ")";
             return "极难 (Level " + level + ")";
+        }
+
+        function updateActiveGameUI(modeId) {
+            const titleEl = document.getElementById('activeGameTitle');
+            const descEl = document.getElementById('activeGameDesc');
+
+            if (modeId === 0) {
+                titleEl.textContent = "光线消消乐";
+                descEl.textContent = "按颜色消除向你逼近的敌人，撑到最后即可过关。";
+            } else {
+                titleEl.textContent = "未知应用 (" + modeId + ")";
+                descEl.textContent = "无法识别的程序正在运行。";
+            }
+
+            // 更新游戏库中的按钮高亮状态
+            document.querySelectorAll('.game-card').forEach(card => {
+                const cardMode = parseInt(card.dataset.mode);
+                const btn = card.querySelector('.launch-btn');
+                if (!btn) return;
+
+                const btnText = btn.querySelector('.launch-btn-text');
+
+                if (cardMode === modeId) {
+                    btn.classList.remove('btn-surface');
+                    btn.classList.add('btn-primary');
+                    btn.disabled = true; // 禁止重复启动
+                    btnText.textContent = "正在运行";
+                } else {
+                    btn.classList.add('btn-surface');
+                    btn.classList.remove('btn-primary');
+                    btn.disabled = false;
+                    btnText.textContent = "启动此应用";
+                }
+            });
         }
 
         function updateMockData() {
@@ -1025,6 +1153,9 @@
 
                 // 处理硬件发来的初始配置同步
                 if (data.type === "sync") {
+                    if (data.m !== undefined) {
+                        updateActiveGameUI(data.m);
+                    }
                     if (data.fw !== undefined) {
                         document.getElementById('fwVersion').textContent = data.fw;
                     }
@@ -1046,7 +1177,8 @@
                     return;
                 }
 
-                // 处理常规的战况 JSON e.g. {"s":12,"k":84,"l":5,"b":100}
+                // 处理常规的战况 JSON e.g. {"m":0,"s":12,"k":84,"l":5,"b":100}
+                if (data.m !== undefined) updateActiveGameUI(data.m);
                 if (data.s !== undefined) document.getElementById('scoreValue').textContent = data.s;
                 if (data.k !== undefined) document.getElementById('killsValue').textContent = data.k;
                 if (data.l !== undefined) document.getElementById('currentLevelValue').textContent = "等级 " + data.l;

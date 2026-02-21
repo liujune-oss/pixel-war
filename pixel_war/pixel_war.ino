@@ -85,9 +85,15 @@ const uint32_t COLOR_WHITE = 0x404040;
 const uint32_t COLOR_DIM = 0x050505;
 const uint32_t COLOR_OFF = 0x000000;
 
-// ================= 3. 游戏数据结构 =================
-#define MAX_PIXELS 32 // 最大像素数量
+// 游戏核心参数
+const int MAX_PIXELS = NUM_LEDS; // 同屏最大像素对象数
+const String FW_VERSION = "v1.2.0";
 
+// ================= [NEW] Game Engine Architecture =================
+enum GameMode { MODE_LIGHT_BEAM = 0 };
+GameMode currentAppMode = MODE_LIGHT_BEAM;
+
+// ================= 3. 游戏数据结构 =================
 struct GamePixel {
   int position; // 0-255
   int color;    // 1=红, 2=绿, 3=蓝
@@ -162,6 +168,7 @@ int settingsMode = 0; // 0=亮度, 1=音量, 2=难度
 const int SETTINGS_MODE_COUNT = 3;
 const int SETTING_STEP = 10;
 
+// ================= 10. 全局变量 =================
 // 屏保
 unsigned long lastActivityTime = 0;
 const unsigned long SLEEP_TIMEOUT = 5 * 60 * 1000; // 5分钟
@@ -184,7 +191,7 @@ bool advertisingRestartRequested = false;
 unsigned long bleFeedbackTimer = 0; // [NEW] Timer to show BLE visual feedback
 
 // Forward declarations
-void initGame();
+void lightBeam_initGame();
 void saveData();
 
 // ================= [NEW] BLE Callbacks =================
@@ -218,7 +225,7 @@ class RxCallbacks : public BLECharacteristicCallbacks {
 
       // Parse Commands
       if (value == "RESTART") {
-        initGame();
+        lightBeam_initGame();
       } else if (value == "OTA") {
         isOTAMode = true;
         setupOTA();
@@ -235,28 +242,28 @@ class RxCallbacks : public BLECharacteristicCallbacks {
         }
       } else if (value == "DEMO") {
         isDemoMode = true;
-        initGame();
+        lightBeam_initGame();
       } else if (value == "SYNC") {
         String json = "{\"type\":\"sync\",\"fw\":\"" + String(FW_VERSION) +
-                      "\",\"brt\":" + String(currentBrightness) +
+                      "\",\"m\":" + String((int)currentAppMode) +
+                      ",\"brt\":" + String(currentBrightness) +
                       ",\"vol\":" + String(currentVolume) +
                       ",\"diff\":" + String(difficulty) + "}";
         pTxCharacteristic->setValue((uint8_t *)json.c_str(), json.length());
         pTxCharacteristic->notify();
       } else if (value.startsWith("B:")) {
         currentBrightness = value.substring(2).toInt();
-        if (currentBrightness < 10)
-          currentBrightness = 10;
+        if (currentBrightness < 5)
+          currentBrightness = 5;
         if (currentBrightness > 100)
           currentBrightness = 100;
         strip.setBrightness(currentBrightness * 255 / 100);
 
         // 实时灯光反馈
-        strip.clear();
-        strip.fill(strip.Color(0, 255, 0), 0,
-                   (NUM_LEDS * currentBrightness) / 100);
-        stripShowSafe();
+        currentState = STATE_SETTINGS;
+        settingsMode = 0;
         bleFeedbackTimer = millis(); // [NEW] Stall normal rendering
+        drawSettings();
 
         saveData();
       } else if (value.startsWith("V:")) {
@@ -268,6 +275,11 @@ class RxCallbacks : public BLECharacteristicCallbacks {
         audio.setVolume(currentVolume);
 
         // 实时声音反馈 (长蜂鸣声测试音量)
+        currentState = STATE_SETTINGS;
+        settingsMode = 1;
+        bleFeedbackTimer = millis();
+        drawSettings();
+
         audio.playBeep();
 
         saveData();
@@ -277,8 +289,22 @@ class RxCallbacks : public BLECharacteristicCallbacks {
           difficulty = 1;
         if (difficulty > 14)
           difficulty = 14;
+
+        currentState = STATE_SETTINGS;
+        settingsMode = 2;
+        bleFeedbackTimer = millis();
+        drawSettings();
+
         audio.playBeep();
         saveData();
+      } else if (value.startsWith("MODE:")) {
+        int newMode = value.substring(5).toInt();
+        if (newMode == 0) {
+          currentAppMode = MODE_LIGHT_BEAM;
+          currentState = STATE_IDLE; // Switch mode resets the game state
+          lightBeam_initGame();
+          audio.play1UP();
+        }
       }
     }
   }
@@ -387,7 +413,7 @@ int getColorType(uint32_t color) {
 }
 
 // ================= 7. 游戏逻辑 =================
-void initGame() {
+void lightBeam_initGame() {
   score = 0;
   difficulty = 1;
   enemyMoveInterval = 150;
@@ -421,7 +447,7 @@ int findFreePixelSlot() {
   return -1;
 }
 
-void spawnEnemy() {
+void lightBeam_spawnEnemy() {
   int slot = findFreePixelSlot();
   if (slot < 0)
     return;
@@ -439,7 +465,7 @@ void spawnEnemy() {
   pixels[slot].active = true;
 }
 
-void spawnBullet(int color) {
+void lightBeam_spawnBullet(int color) {
   int slot = findFreePixelSlot();
   if (slot < 0)
     return;
@@ -459,7 +485,7 @@ void spawnBullet(int color) {
   audio.playBeep();
 }
 
-void checkCollisions() {
+void lightBeam_checkCollisions() {
   for (int i = 0; i < MAX_PIXELS; i++) {
     if (!pixels[i].active)
       continue;
@@ -524,7 +550,7 @@ void checkCollisions() {
   }
 }
 
-void updateEnemies() {
+void lightBeam_updateEnemies() {
   for (int i = 0; i < MAX_PIXELS; i++) {
     if (!pixels[i].active || !pixels[i].isEnemy)
       continue;
@@ -546,7 +572,7 @@ void updateEnemies() {
   }
 }
 
-void updateBullets() {
+void lightBeam_updateBullets() {
   for (int i = 0; i < MAX_PIXELS; i++) {
     if (!pixels[i].active || pixels[i].isEnemy)
       continue;
@@ -561,7 +587,7 @@ void updateBullets() {
 }
 
 // ================= 8. 显示函数 =================
-void drawLEDs() {
+void lightBeam_drawLEDs() {
   // 拖影效果: 每帧将所有LED亮度衰减，而非完全清除
   for (int i = 0; i < NUM_LEDS; i++) {
     uint32_t c = strip.getPixelColor(i);
@@ -617,7 +643,7 @@ void drawLEDs() {
   stripShowSafe();
 }
 
-void drawIdleScreen() {
+void lightBeam_drawIdleScreen() {
   static unsigned long lastAnim = 0;
   static int animPos = 0;
 
@@ -661,7 +687,7 @@ void drawIdleScreen() {
   stripShowSafe();
 }
 
-void drawGameOver() {
+void lightBeam_drawGameOver() {
   if (millis() - gameOverAnimTimer > 200) {
     gameOverAnimTimer = millis();
     gameOverAnimFrame++;
@@ -741,6 +767,7 @@ void drawSettings() {
   uint32_t color = COLOR_WHITE;
 
   if (settingsMode == 0) {
+    // 亮度设置
     value = currentBrightness;
     color = COLOR_GREEN; // 亮度 = 绿色
   } else if (settingsMode == 1) {
@@ -815,7 +842,7 @@ void setupOTA() {
 }
 
 // ================= 10. 按键处理 =================
-void handleButtons() {
+void lightBeam_handleButtons() {
   int rRed = digitalRead(PIN_BTN_RED);
   int rGreen = digitalRead(PIN_BTN_GREEN);
   int rBlue = digitalRead(PIN_BTN_BLUE);
@@ -850,7 +877,7 @@ void handleButtons() {
           (rGreen == LOW && lastStateGreen == HIGH) ||
           (rBlue == LOW && lastStateBlue == HIGH)) {
         lastButtonPress = now;
-        initGame();
+        lightBeam_initGame();
       }
     }
   } else if (currentState == STATE_PLAYING) {
@@ -862,7 +889,7 @@ void handleButtons() {
             (rBlue == LOW && lastStateBlue == HIGH)) {
           lastButtonPress = now;
           isDemoMode = false;
-          initGame();
+          lightBeam_initGame();
         }
       } else if (!isPaused) {
         // [正常游戏情况] 发射子弹
@@ -870,15 +897,15 @@ void handleButtons() {
           lastButtonPress = now;
           pressTimeRed = now;
           longPressHandledRed = false;
-          spawnBullet(1); // 红色子弹
+          lightBeam_spawnBullet(1); // 红色子弹
         }
         if (rGreen == LOW && lastStateGreen == HIGH) {
           lastButtonPress = now;
-          spawnBullet(2); // 绿色子弹
+          lightBeam_spawnBullet(2); // 绿色子弹
         }
         if (rBlue == LOW && lastStateBlue == HIGH) {
           lastButtonPress = now;
-          spawnBullet(3); // 蓝色子弹
+          lightBeam_spawnBullet(3); // 蓝色子弹
         }
       } else {
         // [暂停状态] 处理恢复和退出
@@ -902,23 +929,6 @@ void handleButtons() {
         }
       }
     }
-
-    // 蓝牙状态下的硬核暂停：长按绿键暂停
-    static unsigned long pressTimeGreenGame = 0;
-    static bool longPressHandledGreenGame = false;
-    if (rGreen == LOW && lastStateGreen == HIGH) {
-      pressTimeGreenGame = now;
-      longPressHandledGreenGame = false;
-    }
-    if (rGreen == LOW && !longPressHandledGreenGame && !isPaused &&
-        (now - pressTimeGreenGame > 1500)) {
-      longPressHandledGreenGame = true;
-      isPaused = true;
-      audio.play1UP();
-      while (digitalRead(PIN_BTN_GREEN) == LOW)
-        delay(10);
-    }
-
     // 长按红键进入设置
     if (rRed == LOW && !longPressHandledRed && (now - pressTimeRed > 3000)) {
       longPressHandledRed = true;
@@ -937,64 +947,6 @@ void handleButtons() {
         lastButtonPress = now;
         currentState = STATE_IDLE;
         audio.playBeep();
-      }
-    }
-  } else if (currentState == STATE_SETTINGS) {
-    static unsigned long settingsLastAction = 0;
-    const unsigned long SETTINGS_COOLDOWN = 300;
-
-    if (now - settingsLastAction > SETTINGS_COOLDOWN) {
-      // 绿键: 切换设置项 / 长按3秒退出
-      static unsigned long pressTimeGreen = 0;
-      static bool longPressGreen = false;
-
-      if (rGreen == LOW && lastStateGreen == HIGH) {
-        pressTimeGreen = now;
-        longPressGreen = false;
-      }
-      if (rGreen == LOW && !longPressGreen && (now - pressTimeGreen > 3000)) {
-        longPressGreen = true;
-        saveData();
-        currentState = STATE_PLAYING;
-        audio.play1UP();
-        while (digitalRead(PIN_BTN_GREEN) == LOW)
-          delay(10);
-        return;
-      }
-      if (rGreen == HIGH && lastStateGreen == LOW && !longPressGreen) {
-        settingsMode = (settingsMode + 1) % SETTINGS_MODE_COUNT;
-        audio.playBeep();
-        settingsLastAction = now;
-      }
-
-      // 蓝键: 增加数值
-      if (rBlue == LOW && lastStateBlue == HIGH) {
-        if (settingsMode == 0) {
-          currentBrightness = min(100, currentBrightness + SETTING_STEP);
-          strip.setBrightness(currentBrightness * 255 / 100);
-        } else if (settingsMode == 1) {
-          currentVolume = min(100, currentVolume + SETTING_STEP);
-          audio.setVolume(currentVolume);
-        } else {
-          difficulty = min(14, difficulty + 1);
-        }
-        audio.playBeep();
-        settingsLastAction = now;
-      }
-
-      // 红键: 减少数值
-      if (rRed == LOW && lastStateRed == HIGH) {
-        if (settingsMode == 0) {
-          currentBrightness = max(10, currentBrightness - SETTING_STEP);
-          strip.setBrightness(currentBrightness * 255 / 100);
-        } else if (settingsMode == 1) {
-          currentVolume = max(0, currentVolume - SETTING_STEP);
-          audio.setVolume(currentVolume);
-        } else {
-          difficulty = max(1, difficulty - 1);
-        }
-        audio.playBeep();
-        settingsLastAction = now;
       }
     }
   }
@@ -1105,137 +1057,119 @@ void loop() {
   // 屏保检测
   checkSleepTimeout();
   if (isScreenSaver) {
-    // 屏保模式下只检测按键唤醒
-    handleButtons();
+    if (currentAppMode == MODE_LIGHT_BEAM) {
+      lightBeam_handleButtons();
+    }
     delay(100);
     return;
   }
 
-  // 按键处理
-  handleButtons();
-
-  // 状态机更新
   unsigned long now = millis();
 
   // ================= 10. 状态机与显示更新 =================
-  // 如果正在显示 BLE 反馈，跳过本帧正常渲染
   if (bleFeedbackTimer > 0) {
-    if (now - bleFeedbackTimer < 500) {
-      // 保持反馈画面 500ms
-      return; // Skip normal update/draw
+    if (now - bleFeedbackTimer < 1200) {
+      if (currentState == STATE_SETTINGS) {
+        drawSettings();
+      }
+      return;
     } else {
-      bleFeedbackTimer = 0; // 结束反馈，恢复正常
+      bleFeedbackTimer = 0;
+      currentState = STATE_IDLE; // Feedback over, return to idle
     }
   }
 
-  if (currentState == STATE_IDLE) {
-    drawIdleScreen();
-  } else if (currentState == STATE_PLAYING) {
-    if (!isPaused) {
-      // 波次系统: 生成敌人
-      if (waveActive) {
-        // 波内: 按间隔生成敌人
-        if (now - lastEnemySpawn > (unsigned long)enemySpawnInterval) {
-          lastEnemySpawn = now;
-          spawnEnemy();
-          waveEnemiesSpawned++;
+  // 根据当前游戏模式分发逻辑
+  switch (currentAppMode) {
+  case MODE_LIGHT_BEAM:
+    lightBeam_handleButtons();
 
-          // 这一波出完了，进入休息
-          if (waveEnemiesSpawned >= waveEnemyCount) {
-            waveActive = false;
-            waveRestStart = now;
-          }
-        }
-      } else {
-        // 波间休息
-        if (now - waveRestStart > (unsigned long)waveRestDuration) {
-          // 开始新的一波
-          waveNumber++;
-          waveEnemiesSpawned = 0;
-          waveActive = true;
-          // 随难度增加每波敌人数 (最多10个)
-          waveEnemyCount = min(10, 3 + difficulty / 2);
-          // 随难度缩短休息时间 (最短1秒)
-          waveRestDuration = max(1000, 3000 - difficulty * 150);
-        }
-      }
+    if (currentState == STATE_IDLE) {
+      lightBeam_drawIdleScreen();
+    } else if (currentState == STATE_PLAYING) {
+      if (!isPaused) {
+        // 波次系统: 生成敌人
+        if (waveActive) {
+          if (now - lastEnemySpawn > (unsigned long)enemySpawnInterval) {
+            lastEnemySpawn = now;
+            lightBeam_spawnEnemy();
+            waveEnemiesSpawned++;
 
-      // 移动敌人
-      if (now - lastEnemyMove > enemyMoveInterval) {
-        lastEnemyMove = now;
-        updateEnemies();
-      }
-
-      // 移动子弹 (每帧移动，约100像素/秒)
-      if (now - lastBulletMove >= 10) {
-        lastBulletMove = now;
-        updateBullets();
-      }
-
-      // 碰撞检测
-      checkCollisions();
-
-      // ================= [NEW] 试玩模式 AI 自动射击 =================
-      if (isDemoMode && !isPaused) {
-        // 神仙
-        // AI：不看冷却，只要发射跑道空出，并且存在未被分配子弹的敌人，立刻按出兵顺序发射精准克制子弹。
-        int activeBullets = 0;
-        int enemyPositions[MAX_PIXELS];
-        int enemyColors[MAX_PIXELS];
-        int enemyCount = 0;
-
-        for (int i = 0; i < MAX_PIXELS; i++) {
-          if (pixels[i].active) {
-            if (!pixels[i].isEnemy) {
-              activeBullets++;
-            } else {
-              enemyPositions[enemyCount] = pixels[i].position;
-              enemyColors[enemyCount] = pixels[i].color;
-              enemyCount++;
+            if (waveEnemiesSpawned >= waveEnemyCount) {
+              waveActive = false;
+              waveRestStart = now;
             }
           }
+        } else {
+          if (now - waveRestStart > (unsigned long)waveRestDuration) {
+            waveNumber++;
+            waveEnemiesSpawned = 0;
+            waveActive = true;
+            waveEnemyCount = min(10, 3 + difficulty / 2);
+            waveRestDuration = max(1000, 3000 - difficulty * 150);
+          }
         }
 
-        // 如果有还没有对应子弹的敌人
-        if (activeBullets < enemyCount) {
-          // 对敌人按位置从小到大排序 (离玩家最近的排在前面) (冒泡排序)
-          for (int i = 0; i < enemyCount - 1; i++) {
-            for (int j = 0; j < enemyCount - i - 1; j++) {
-              if (enemyPositions[j] > enemyPositions[j + 1]) {
-                // 交换位置
-                int tempP = enemyPositions[j];
-                enemyPositions[j] = enemyPositions[j + 1];
-                enemyPositions[j + 1] = tempP;
-                // 交换颜色
-                int tempC = enemyColors[j];
-                enemyColors[j] = enemyColors[j + 1];
-                enemyColors[j + 1] = tempC;
+        // 移动敌人
+        if (now - lastEnemyMove > enemyMoveInterval) {
+          lastEnemyMove = now;
+          lightBeam_updateEnemies();
+        }
+
+        // 移动子弹
+        if (now - lastBulletMove >= 10) {
+          lastBulletMove = now;
+          lightBeam_updateBullets();
+        }
+
+        // 碰撞检测
+        lightBeam_checkCollisions();
+
+        // ================= 试玩模式 AI =================
+        if (isDemoMode && !isPaused) {
+          int activeBullets = 0;
+          int enemyPositions[MAX_PIXELS];
+          int enemyColors[MAX_PIXELS];
+          int enemyCount = 0;
+
+          for (int i = 0; i < MAX_PIXELS; i++) {
+            if (pixels[i].active) {
+              if (!pixels[i].isEnemy)
+                activeBullets++;
+              else {
+                enemyPositions[enemyCount] = pixels[i].position;
+                enemyColors[enemyCount] = pixels[i].color;
+                enemyCount++;
               }
             }
           }
 
-          // 第 activeBullets 个敌人就是当前尚未被子弹瞄准的最前线敌人
-          // 因为前面 activeBullets 个敌人已经被目前战场上同等数量的子弹“预定”了
-          int targetColor = enemyColors[activeBullets];
-
-          // 尝试开火 (spawnBullet 自带发射口拥堵检测，如果发射口被占据会自己
-          // return，完美充当自动火力限制器)
-          spawnBullet(targetColor);
+          if (activeBullets < enemyCount) {
+            for (int i = 0; i < enemyCount - 1; i++) {
+              for (int j = 0; j < enemyCount - i - 1; j++) {
+                if (enemyPositions[j] > enemyPositions[j + 1]) {
+                  int tempP = enemyPositions[j];
+                  enemyPositions[j] = enemyPositions[j + 1];
+                  enemyPositions[j + 1] = tempP;
+                  int tempC = enemyColors[j];
+                  enemyColors[j] = enemyColors[j + 1];
+                  enemyColors[j + 1] = tempC;
+                }
+              }
+            }
+            int targetColor = enemyColors[activeBullets];
+            lightBeam_spawnBullet(targetColor);
+          }
         }
       }
+      lightBeam_drawLEDs();
+    } else if (currentState == STATE_GAME_OVER) {
+      lightBeam_drawGameOver();
+      if (isDemoMode && (now - gameOverAnimTimer > 6000)) {
+        lightBeam_initGame();
+      }
     }
-
-    // 绘制
-    drawLEDs();
-  } else if (currentState == STATE_GAME_OVER) {
-    drawGameOver();
-
-    // 试玩模式: 观赏动画结束后自动重开循环试玩
-    if (isDemoMode && (now - gameOverAnimTimer > 6000)) {
-      initGame();
-    }
-  } else if (currentState == STATE_SETTINGS) {
-    drawSettings();
+    break;
   }
 
   // ================= [NEW] BLE Telemetry Loop =================
@@ -1244,7 +1178,8 @@ void loop() {
     if (now - lastBleSync >= 1000) {
       lastBleSync = now;
       int batteryPct = getBatteryPercent();
-      String json = "{\"s\":" + String(score) + ",\"k\":" + String(score) +
+      String json = "{\"m\":" + String((int)currentAppMode) +
+                    ",\"s\":" + String(score) + ",\"k\":" + String(score) +
                     ",\"l\":" + String(difficulty) +
                     ",\"b\":" + String(batteryPct) + "}";
       pTxCharacteristic->setValue((uint8_t *)json.c_str(), json.length());

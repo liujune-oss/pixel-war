@@ -762,7 +762,7 @@
         // 全局配置区 - 方便修改APP信息
         // ==========================================
         const APP_CONFIG = {
-            version: "v1.0.0", // 修改此处的字符串即可更新网页显示的版本号
+            version: "v1.1.0", // 修改此处的字符串即可更新网页显示的版本号
         };
 
         // DOM Elements
@@ -874,8 +874,8 @@
             setupSlider('difficultySlider', 'difficultyLevelStr', '', (val) => getDifficultyString(val), (val) => sendDataToESP32('D:' + val));
 
             // Slider buttons
-            setupSliderButtons('brightnessSlider', 'btnBrightnessMinus', 'btnBrightnessPlus', 5);
-            setupSliderButtons('volumeSlider', 'btnVolumeMinus', 'btnVolumePlus', 1);
+            setupSliderButtons('brightnessSlider', 'btnBrightnessMinus', 'btnBrightnessPlus', 5, (val) => sendDataToESP32('B:' + val));
+            setupSliderButtons('volumeSlider', 'btnVolumeMinus', 'btnVolumePlus', 1, (val) => sendDataToESP32('V:' + (val * 10)));
         }
 
         function showApp() {
@@ -926,19 +926,19 @@
             }
         }
 
-        function setupSliderButtons(sliderId, minusId, plusId, step) {
+        function setupSliderButtons(sliderId, minusId, plusId, step, changeCallback) {
             const slider = document.getElementById(sliderId);
 
             document.getElementById(minusId).addEventListener('click', () => {
                 slider.value = Math.max(parseInt(slider.min), parseInt(slider.value) - step);
                 slider.dispatchEvent(new Event('input'));
-                slider.dispatchEvent(new Event('change')); // Triggers sending BLE commmand
+                if (changeCallback) changeCallback(slider.value);
             });
 
             document.getElementById(plusId).addEventListener('click', () => {
                 slider.value = Math.min(parseInt(slider.max), parseInt(slider.value) + step);
                 slider.dispatchEvent(new Event('input'));
-                slider.dispatchEvent(new Event('change')); // Triggers sending BLE commmand
+                if (changeCallback) changeCallback(slider.value);
             });
         }
 
@@ -972,18 +972,38 @@
             showConnectScreen();
         }
 
+        let bleSendQueue = [];
+        let isBleSending = false;
+
+        async function processBleQueue() {
+            if (isBleSending || bleSendQueue.length === 0) return;
+            isBleSending = true;
+
+            while (bleSendQueue.length > 0) {
+                const dataString = bleSendQueue[0];
+                try {
+                    const encoder = new TextEncoder();
+                    await rxCharacteristic.writeValue(encoder.encode(dataString));
+                    console.log("[BLE TX] " + dataString);
+                    bleSendQueue.shift(); // Success
+                } catch (error) {
+                    console.error("[BLE TX ERROR]", error);
+                    bleSendQueue.shift(); // Drop it so we don't get stuck forever
+                }
+                // Delay slightly to prevent GATT busy errors when sending rapidly
+                await new Promise(r => setTimeout(r, 50));
+            }
+
+            isBleSending = false;
+        }
+
         async function sendDataToESP32(dataString) {
             if (!rxCharacteristic) {
                 console.warn("[BLE] Not connected to device. Cannot send: " + dataString);
                 return;
             }
-            try {
-                const encoder = new TextEncoder();
-                await rxCharacteristic.writeValue(encoder.encode(dataString));
-                console.log("[BLE TX] " + dataString);
-            } catch (error) {
-                console.error("[BLE TX ERROR]", error);
-            }
+            bleSendQueue.push(dataString);
+            processBleQueue();
         }
 
         function handleIncomingData(event) {

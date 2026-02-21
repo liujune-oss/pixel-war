@@ -735,6 +735,10 @@
 
                 <!-- Danger Zone -->
                 <section class="card-section mt-8">
+                    <button id="btnEnterOTA" class="btn btn-surface btn-full mb-4" style="color: var(--warning);">
+                        <i data-lucide="wifi" class="btn-icon"></i>
+                        <span>进入 OTA 升级模式</span>
+                    </button>
                     <button id="btnDisconnect" class="btn btn-danger-text btn-full">
                         <span>断开蓝牙连接</span>
                     </button>
@@ -860,6 +864,11 @@
             document.getElementById('btnRestartGame').addEventListener('click', () => sendDataToESP32('RESTART'));
             document.getElementById('btnStopGame').addEventListener('click', () => sendDataToESP32('PAUSE'));
             document.getElementById('btnRunDemo').addEventListener('click', () => sendDataToESP32('DEMO'));
+            document.getElementById('btnEnterOTA').addEventListener('click', () => {
+                if (confirm("确定要让设备重启进入 OTA 无线升级模式吗？\n\n设备将断开蓝牙连拉并建立 WiFi 热点。")) {
+                    sendDataToESP32('OTA');
+                }
+            });
             document.getElementById('btnDisconnect').addEventListener('click', () => {
                 if (bleDevice && bleDevice.gatt.connected) {
                     bleDevice.gatt.disconnect();

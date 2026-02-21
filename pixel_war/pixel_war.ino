@@ -219,6 +219,9 @@ class RxCallbacks : public BLECharacteristicCallbacks {
       // Parse Commands
       if (value == "RESTART") {
         initGame();
+      } else if (value == "OTA") {
+        isOTAMode = true;
+        setupOTA();
       } else if (value == "PAUSE") {
         if (currentState == STATE_PLAYING) {
           isPaused = !isPaused;

@@ -106,6 +106,7 @@ enum GameState {
 };
 GameState currentState = STATE_IDLE;
 bool isPaused = false;
+bool isDemoMode = false;
 
 // ================= 4. 全局变量 =================
 Preferences prefs;
@@ -230,10 +231,8 @@ class RxCallbacks : public BLECharacteristicCallbacks {
           }
         }
       } else if (value == "DEMO") {
-        currentState = STATE_IDLE;
-        isPaused = false;
-        isScreenSaver = false;
-        lastActivityTime = millis();
+        isDemoMode = true;
+        initGame();
       } else if (value == "SYNC") {
         String json =
             "{\"type\":\"sync\",\"brt\":" + String(currentBrightness) +
@@ -405,7 +404,10 @@ void initGame() {
 
   currentState = STATE_PLAYING;
   isPaused = false;
-  audio.playBeep();
+
+  if (!isDemoMode) {
+    audio.playBeep();
+  }
 }
 
 int findFreePixelSlot() {
@@ -850,7 +852,16 @@ void handleButtons() {
     }
   } else if (currentState == STATE_PLAYING) {
     if (now - lastButtonPress > BUTTON_COOLDOWN) {
-      if (!isPaused) {
+      if (isDemoMode) {
+        // [试玩模式] 按下任意键结束试玩并开始真正的游戏
+        if ((rRed == LOW && lastStateRed == HIGH) ||
+            (rGreen == LOW && lastStateGreen == HIGH) ||
+            (rBlue == LOW && lastStateBlue == HIGH)) {
+          lastButtonPress = now;
+          isDemoMode = false;
+          initGame();
+        }
+      } else if (!isPaused) {
         // [正常游戏情况] 发射子弹
         if (rRed == LOW && lastStateRed == HIGH) {
           lastButtonPress = now;
@@ -1160,12 +1171,44 @@ void loop() {
 
       // 碰撞检测
       checkCollisions();
+
+      // ================= [NEW] 试玩模式 AI 自动射击 =================
+      if (isDemoMode && !isPaused) {
+        static unsigned long lastAiShot = 0;
+        // 试玩模式的 AI 射击冷却，随难度加快以应付更多敌人
+        unsigned long aiCooldown = max(300, 800 - difficulty * 50);
+        if (now - lastAiShot > aiCooldown) {
+          int closestEnemyDist = 999;
+          int targetColor = 0;
+
+          // 寻找最靠近玩家的敌人
+          for (int i = 0; i < MAX_PIXELS; i++) {
+            if (pixels[i].active && pixels[i].isEnemy) {
+              if (pixels[i].position < closestEnemyDist) {
+                closestEnemyDist = pixels[i].position;
+                targetColor = pixels[i].color;
+              }
+            }
+          }
+
+          // 当敌人逼近到一定距离时开火 (SPAWN_POS = 179)，增加容错表现距离
+          if (closestEnemyDist < SPAWN_POS - 20) {
+            spawnBullet(targetColor);
+            lastAiShot = now;
+          }
+        }
+      }
     }
 
     // 绘制
     drawLEDs();
   } else if (currentState == STATE_GAME_OVER) {
     drawGameOver();
+
+    // 试玩模式: 观赏动画结束后自动重开循环试玩
+    if (isDemoMode && (now - gameOverAnimTimer > 6000)) {
+      initGame();
+    }
   } else if (currentState == STATE_SETTINGS) {
     drawSettings();
   }

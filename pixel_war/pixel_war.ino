@@ -48,6 +48,35 @@
 
 Adafruit_NeoPixel strip(NUM_LEDS, PIN_LED_STRIP, NEO_GRB + NEO_KHZ800);
 
+// ================= [NEW] Software Power Limiter =================
+void stripShowSafe() {
+  uint8_t *pixels = strip.getPixels();
+  uint32_t totalSum = 0;
+  uint16_t numBytes = NUM_LEDS * 3; // NEO_GRB
+
+  // 1. 统计当前缓冲区的所有亮度值
+  for (uint16_t i = 0; i < numBytes; i++) {
+    totalSum += pixels[i];
+  }
+
+  // 2. 估算电流 (mA)
+  // 假设全白 (765) = 60mA -> 1个单位值 ≈ 0.0784mA
+  // 加上 ESP32 基础功耗约 100mA
+  float estimatedCurrent = (totalSum * 0.0784) + 100;
+
+  const float MAX_CURRENT_MA = 2000.0; // 限制在 2000mA (安全值)
+
+  // 3. 如果超标，计算缩放比例并应用
+  if (estimatedCurrent > MAX_CURRENT_MA) {
+    float scale = MAX_CURRENT_MA / estimatedCurrent;
+    for (uint16_t i = 0; i < numBytes; i++) {
+      pixels[i] = (uint8_t)(pixels[i] * scale);
+    }
+  }
+
+  strip.show();
+}
+
 // 颜色定义
 const uint32_t COLOR_RED = 0xFF0000;
 const uint32_t COLOR_GREEN = 0x00FF00;
@@ -76,6 +105,7 @@ enum GameState {
   STATE_SETTINGS   // 设置菜单
 };
 GameState currentState = STATE_IDLE;
+bool isPaused = false;
 
 // ================= 4. 全局变量 =================
 Preferences prefs;
@@ -188,6 +218,22 @@ class RxCallbacks : public BLECharacteristicCallbacks {
       // Parse Commands
       if (value == "RESTART") {
         initGame();
+      } else if (value == "PAUSE") {
+        if (currentState == STATE_PLAYING) {
+          isPaused = !isPaused;
+          if (!isPaused) {
+            // 恢复时重置计时器防止跳跃
+            unsigned long now = millis();
+            lastEnemyMove = now;
+            lastBulletMove = now;
+            lastEnemySpawn = now;
+          }
+        }
+      } else if (value == "DEMO") {
+        currentState = STATE_IDLE;
+        isPaused = false;
+        isScreenSaver = false;
+        lastActivityTime = millis();
       } else if (value == "SYNC") {
         String json =
             "{\"type\":\"sync\",\"brt\":" + String(currentBrightness) +
@@ -207,7 +253,7 @@ class RxCallbacks : public BLECharacteristicCallbacks {
         strip.clear();
         strip.fill(strip.Color(0, 255, 0), 0,
                    (NUM_LEDS * currentBrightness) / 100);
-        strip.show();
+        stripShowSafe();
         bleFeedbackTimer = millis(); // [NEW] Stall normal rendering
 
         saveData();
@@ -274,14 +320,21 @@ int getBatteryPercent() {
   }
   int avgMv = sum / count;
 
-  // [校准] 实际满电约 4040mV，空电约 3300mV
+  // [调试] 输出原始电压值
+  static unsigned long lastDebugTime = 0;
+  if (millis() - lastDebugTime > 10000) { // 每10秒输出一次
+    lastDebugTime = millis();
+    Serial.printf("[BATT DEBUG] Raw mV: %d, Avg mV: %d\n", mv, avgMv);
+  }
+
+  // [校准] 实际满电约为 3900mV (留有负载压降余量)，空电约 3300mV
   int percent;
-  if (avgMv >= 4040)
+  if (avgMv >= 3900)
     percent = 100;
   else if (avgMv <= 3300)
     percent = 0;
   else
-    percent = (avgMv - 3300) * 100 / 740;
+    percent = (avgMv - 3300) * 100 / 600;
 
   return percent;
 }
@@ -351,6 +404,7 @@ void initGame() {
   }
 
   currentState = STATE_PLAYING;
+  isPaused = false;
   audio.playBeep();
 }
 
@@ -555,7 +609,7 @@ void drawLEDs() {
     strip.setPixelColor(PLAYER_POS, COLOR_WHITE);
   }
 
-  strip.show();
+  stripShowSafe();
 }
 
 void drawIdleScreen() {
@@ -599,7 +653,7 @@ void drawIdleScreen() {
     strip.setPixelColor(i, strip.Color(r, g, b));
   }
 
-  strip.show();
+  stripShowSafe();
 }
 
 void drawGameOver() {
@@ -617,7 +671,7 @@ void drawGameOver() {
         strip.setPixelColor(i, COLOR_RED);
       }
     }
-    strip.show();
+    stripShowSafe();
     return;
   }
 
@@ -672,7 +726,7 @@ void drawGameOver() {
     }
   }
 
-  strip.show();
+  stripShowSafe();
 }
 
 void drawSettings() {
@@ -698,14 +752,14 @@ void drawSettings() {
     strip.setPixelColor(i, color);
   }
 
-  strip.show();
+  stripShowSafe();
 }
 
 // ================= 9. WiFi OTA =================
 void setupOTA() {
   strip.clear();
   strip.setPixelColor(0, COLOR_BLUE);
-  strip.show();
+  stripShowSafe();
 
   WiFi.mode(WIFI_STA);
 
@@ -720,7 +774,7 @@ void setupOTA() {
   while (WiFi.status() != WL_CONNECTED && timeout < 20) {
     delay(500);
     strip.setPixelColor(0, (timeout % 2 == 0) ? COLOR_BLUE : COLOR_OFF);
-    strip.show();
+    stripShowSafe();
     timeout++;
   }
 
@@ -735,7 +789,7 @@ void setupOTA() {
     for (int i = 0; i < 10; i++) {
       strip.setPixelColor(i, COLOR_GREEN);
     }
-    strip.show();
+    stripShowSafe();
   } else {
     // 连接失败，启动 AP 模式
     WiFi.disconnect();
@@ -747,7 +801,7 @@ void setupOTA() {
     for (int i = 0; i < 10; i++) {
       strip.setPixelColor(i, COLOR_RED);
     }
-    strip.show();
+    stripShowSafe();
   }
 
   ElegantOTA.begin(&server);
@@ -796,21 +850,59 @@ void handleButtons() {
     }
   } else if (currentState == STATE_PLAYING) {
     if (now - lastButtonPress > BUTTON_COOLDOWN) {
-      // 发射子弹
-      if (rRed == LOW && lastStateRed == HIGH) {
-        lastButtonPress = now;
-        pressTimeRed = now;
-        longPressHandledRed = false;
-        spawnBullet(1); // 红色子弹
+      if (!isPaused) {
+        // [正常游戏情况] 发射子弹
+        if (rRed == LOW && lastStateRed == HIGH) {
+          lastButtonPress = now;
+          pressTimeRed = now;
+          longPressHandledRed = false;
+          spawnBullet(1); // 红色子弹
+        }
+        if (rGreen == LOW && lastStateGreen == HIGH) {
+          lastButtonPress = now;
+          spawnBullet(2); // 绿色子弹
+        }
+        if (rBlue == LOW && lastStateBlue == HIGH) {
+          lastButtonPress = now;
+          spawnBullet(3); // 蓝色子弹
+        }
+      } else {
+        // [暂停状态] 处理恢复和退出
+        if (rGreen == LOW && lastStateGreen == HIGH) {
+          // 暂停时按绿键：退出试玩 (DEMO) 并回到 IDLE
+          lastButtonPress = now;
+          currentState = STATE_IDLE;
+          isPaused = false;
+          isScreenSaver = false;
+          lastActivityTime = millis();
+        }
+        if (rBlue == LOW && lastStateBlue == HIGH) {
+          // 暂停时按蓝键：恢复游戏 (取消暂停)
+          lastButtonPress = now;
+          isPaused = false;
+          // 恢复时重置计时器防止跳跃
+          lastEnemyMove = now;
+          lastBulletMove = now;
+          lastEnemySpawn = now;
+          audio.playBeep();
+        }
       }
-      if (rGreen == LOW && lastStateGreen == HIGH) {
-        lastButtonPress = now;
-        spawnBullet(2); // 绿色子弹
-      }
-      if (rBlue == LOW && lastStateBlue == HIGH) {
-        lastButtonPress = now;
-        spawnBullet(3); // 蓝色子弹
-      }
+    }
+
+    // 蓝牙状态下的硬核暂停：长按绿键暂停
+    static unsigned long pressTimeGreenGame = 0;
+    static bool longPressHandledGreenGame = false;
+    if (rGreen == LOW && lastStateGreen == HIGH) {
+      pressTimeGreenGame = now;
+      longPressHandledGreenGame = false;
+    }
+    if (rGreen == LOW && !longPressHandledGreenGame && !isPaused &&
+        (now - pressTimeGreenGame > 1500)) {
+      longPressHandledGreenGame = true;
+      isPaused = true;
+      audio.play1UP();
+      while (digitalRead(PIN_BTN_GREEN) == LOW)
+        delay(10);
     }
 
     // 长按红键进入设置
@@ -903,7 +995,7 @@ void checkSleepTimeout() {
   if (!isScreenSaver && (millis() - lastActivityTime > SLEEP_TIMEOUT)) {
     isScreenSaver = true;
     strip.clear();
-    strip.show();
+    stripShowSafe();
   }
 }
 
@@ -924,7 +1016,7 @@ void setup() {
   // 初始化 LED 灯带
   strip.begin();
   strip.setBrightness(30);
-  strip.show();
+  stripShowSafe();
 
   // ================= [NEW] 初始化 BLE 服务 =================
   BLEDevice::init("Pixel War");
@@ -973,12 +1065,12 @@ void setup() {
   // 启动动画
   for (int i = 0; i < NUM_LEDS; i++) {
     strip.setPixelColor(i, COLOR_GREEN);
-    strip.show();
+    stripShowSafe();
     delay(2);
   }
   delay(200);
   strip.clear();
-  strip.show();
+  stripShowSafe();
 
   audio.playMario();
   lastActivityTime = millis();
@@ -1025,48 +1117,50 @@ void loop() {
   if (currentState == STATE_IDLE) {
     drawIdleScreen();
   } else if (currentState == STATE_PLAYING) {
-    // 波次系统: 生成敌人
-    if (waveActive) {
-      // 波内: 按间隔生成敌人
-      if (now - lastEnemySpawn > (unsigned long)enemySpawnInterval) {
-        lastEnemySpawn = now;
-        spawnEnemy();
-        waveEnemiesSpawned++;
+    if (!isPaused) {
+      // 波次系统: 生成敌人
+      if (waveActive) {
+        // 波内: 按间隔生成敌人
+        if (now - lastEnemySpawn > (unsigned long)enemySpawnInterval) {
+          lastEnemySpawn = now;
+          spawnEnemy();
+          waveEnemiesSpawned++;
 
-        // 这一波出完了，进入休息
-        if (waveEnemiesSpawned >= waveEnemyCount) {
-          waveActive = false;
-          waveRestStart = now;
+          // 这一波出完了，进入休息
+          if (waveEnemiesSpawned >= waveEnemyCount) {
+            waveActive = false;
+            waveRestStart = now;
+          }
+        }
+      } else {
+        // 波间休息
+        if (now - waveRestStart > (unsigned long)waveRestDuration) {
+          // 开始新的一波
+          waveNumber++;
+          waveEnemiesSpawned = 0;
+          waveActive = true;
+          // 随难度增加每波敌人数 (最多10个)
+          waveEnemyCount = min(10, 3 + difficulty / 2);
+          // 随难度缩短休息时间 (最短1秒)
+          waveRestDuration = max(1000, 3000 - difficulty * 150);
         }
       }
-    } else {
-      // 波间休息
-      if (now - waveRestStart > (unsigned long)waveRestDuration) {
-        // 开始新的一波
-        waveNumber++;
-        waveEnemiesSpawned = 0;
-        waveActive = true;
-        // 随难度增加每波敌人数 (最多10个)
-        waveEnemyCount = min(10, 3 + difficulty / 2);
-        // 随难度缩短休息时间 (最短1秒)
-        waveRestDuration = max(1000, 3000 - difficulty * 150);
+
+      // 移动敌人
+      if (now - lastEnemyMove > enemyMoveInterval) {
+        lastEnemyMove = now;
+        updateEnemies();
       }
-    }
 
-    // 移动敌人
-    if (now - lastEnemyMove > enemyMoveInterval) {
-      lastEnemyMove = now;
-      updateEnemies();
-    }
+      // 移动子弹 (每帧移动，约100像素/秒)
+      if (now - lastBulletMove >= 10) {
+        lastBulletMove = now;
+        updateBullets();
+      }
 
-    // 移动子弹 (每帧移动，约100像素/秒)
-    if (now - lastBulletMove >= 10) {
-      lastBulletMove = now;
-      updateBullets();
+      // 碰撞检测
+      checkCollisions();
     }
-
-    // 碰撞检测
-    checkCollisions();
 
     // 绘制
     drawLEDs();

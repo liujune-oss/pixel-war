@@ -183,7 +183,6 @@ float flappyGapSpeed = 0.0;        // Vertical velocity of the safe gap
 unsigned long flappyGapTurnTimer = 0; // Timer to compute next random gap turn
 unsigned long flappyLastUpdate = 0;
 unsigned long flappySurviveStart = 0;
-unsigned long flappyScore = 0;
 
 // ================= 10. 全局变量 =================
 // 屏保
@@ -1008,7 +1007,7 @@ void flappyBird_initGame() {
   flappyCloudBoundary = flappyGapCenter + (baseGap / 2);  // 顶部云层
   flappyGroundBoundary = flappyGapCenter - (baseGap / 2); // 底部地面
 
-  flappyScore = 0;
+  score = 0;
   flappySurviveStart = millis();
   flappyLastUpdate = millis();
 
@@ -1027,7 +1026,7 @@ void flappyBird_update() {
 
     // 边界收缩难度控制 (存活时间越长越难)
     unsigned long surviveTime = now - flappySurviveStart;
-    flappyScore = surviveTime / 1000;
+    score = surviveTime / 1000;
 
     // 每 10 秒收缩一层像素
     float shrinkAmount = (float)surviveTime / 10000.0;
@@ -1074,7 +1073,6 @@ void flappyBird_update() {
         flappyBirdY - 1 <= flappyGroundBoundary) {
       currentState = STATE_GAME_OVER;
       gameOverAnimTimer = millis();
-      score = flappyScore; // 更新全局分数
       if (score > highScore) {
         highScore = score;
         saveData();
@@ -1482,7 +1480,7 @@ void loop() {
       lastBleSync = now;
       int batteryPct = getBatteryPercent();
       String json = "{\"m\":" + String((int)currentAppMode) +
-                    ",\"s\":" + String(score) + ",\"k\":" + String(score) +
+                    ",\"s\":" + String(score) + ",\"k\":" + String(highScore) +
                     ",\"l\":" + String(difficulty) +
                     ",\"b\":" + String(batteryPct) +
                     ",\"p\":" + String(isPaused ? 1 : 0) +

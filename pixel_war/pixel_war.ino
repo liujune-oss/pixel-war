@@ -1179,14 +1179,14 @@ void flappyBird_handleButtons() {
       if (rGreen == LOW && lastStateGreen == HIGH) {
         if (now - lastButtonPress > 100) {
           lastButtonPress = now;
-          // 考虑当前的运动惯性
-          if (flappyVelocity < 0) {
-            // 正在下落：需要抵消向下的动量，最终的向上冲量会被削弱
-            flappyVelocity = flappyJumpStrength + (flappyVelocity * 0.5);
-          } else {
-            // 平飞或正在上升：赋予标准冲量（重置速度防止无限叠加）
-            flappyVelocity = flappyJumpStrength;
+          // 纯物理冲量：将跳跃力叠加到当前速度上，不区分上升还是下落
+          flappyVelocity += flappyJumpStrength;
+
+          // 限制最大向上速度，防止疯狂连按导致的穿模飞出屏幕
+          if (flappyVelocity > 2.0) {
+            flappyVelocity = 2.0;
           }
+
           audio.playHit(); // 音效
         }
       }

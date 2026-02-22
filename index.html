@@ -625,11 +625,11 @@
                     <div class="metrics-row">
                         <div class="metric-card bg-primary text-dark">
                             <div class="metric-value font-grotesk" id="scoreValue">0</div>
-                            <div class="metric-label">总得分</div>
+                            <div class="metric-label" id="scoreLabel">总得分</div>
                         </div>
                         <div class="metric-card bg-surface">
                             <div class="metric-value font-grotesk text-white" id="killsValue">0</div>
-                            <div class="metric-label">击杀数</div>
+                            <div class="metric-label" id="killsLabel">击杀数</div>
                         </div>
                     </div>
                     <div class="difficulty-bar">
@@ -1108,12 +1108,19 @@
             const titleEl = document.getElementById('activeGameTitle');
             const descEl = document.getElementById('activeGameDesc');
 
+            const scoreLabelEl = document.getElementById('scoreLabel');
+            const killsLabelEl = document.getElementById('killsLabel');
+
             if (modeId === 0) {
                 titleEl.textContent = "光线消消乐";
                 descEl.textContent = "按颜色消除向你逼近的敌人，撑到最后即可过关。";
+                scoreLabelEl.textContent = "总得分";
+                killsLabelEl.textContent = "击杀数";
             } else if (modeId === 1) {
                 titleEl.textContent = "像素小鸟";
                 descEl.textContent = "单键控制小鸟起飞，在不断收缩的云朵与地面间极限求生！";
+                scoreLabelEl.textContent = "存活时间 (秒)";
+                killsLabelEl.textContent = "历史最佳";
             } else {
                 titleEl.textContent = "未知应用 (" + modeId + ")";
                 descEl.textContent = "无法识别的程序正在运行。";

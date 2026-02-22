@@ -1019,8 +1019,15 @@ void flappyBird_update() {
     float shrinkAmount = (float)surviveTime / 10000.0;
 
     // 随时间推移，通道中心点开始上下浮动 (正弦波)
-    // 周期随难度稍微加快，幅度随存活时间逐渐增加，最大幅度 +/- 15 像素
-    float maxOscillation = min(15.0f, (float)surviveTime / 2000.0f);
+    // 根据当前难度决定的基础缝隙，计算中心点允许移动的最大极限，避免边界被顶出屏幕
+    float baseGap = 60.0 - (difficulty * 2.0);
+    float currentGap = baseGap - (shrinkAmount * 2);
+    // 中心点可移动的空间范围：假设灯带0-99，有效移动范围大约是从 currentGap/2
+    // 到 100-currentGap/2
+    float maxAllowedOffset = 50.0 - (currentGap / 2) - 1.0;
+
+    // 幅度随存活时间逐渐增加，直到达到当前允许的最大范围
+    float maxOscillation = min(maxAllowedOffset, (float)surviveTime / 1500.0f);
     float speedFactor = 1000.0 - (difficulty * 30.0);
     float centerOffset = sin((float)now / speedFactor) * maxOscillation;
     float currentCenter = 50.0 + centerOffset;
@@ -1060,10 +1067,12 @@ void flappyBird_drawIdleScreen() {
   strip.setPixelColor(yy + 1, strip.Color(255, 255, 0));
   strip.setPixelColor(yy - 1, strip.Color(255, 255, 0));
 
-  // 画两端基准边界 (待机时展示稍微浮动的通道)
-  float centerOffset = sin(now / 1000.0) * 10.0;
-  float currentCenter = 50.0 + centerOffset;
+  // 画两端基准边界 (待机时展示大幅度浮动的通道)
   float baseGap = 60.0 - (difficulty * 2.0);
+  float maxAllowedOffset = 50.0 - (baseGap / 2) - 1.0;
+  float centerOffset =
+      sin(now / 1000.0) * maxAllowedOffset; // 待机时直接展示最大幅度
+  float currentCenter = 50.0 + centerOffset;
   int ct = currentCenter + (baseGap / 2);
   int gb = currentCenter - (baseGap / 2);
 

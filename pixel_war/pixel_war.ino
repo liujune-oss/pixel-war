@@ -248,7 +248,9 @@ class RxCallbacks : public BLECharacteristicCallbacks {
                       "\",\"m\":" + String((int)currentAppMode) +
                       ",\"brt\":" + String(currentBrightness) +
                       ",\"vol\":" + String(currentVolume) +
-                      ",\"diff\":" + String(difficulty) + "}";
+                      ",\"diff\":" + String(difficulty) +
+                      ",\"p\":" + String(isPaused ? 1 : 0) +
+                      ",\"d\":" + String(isDemoMode ? 1 : 0) + "}";
         pTxCharacteristic->setValue((uint8_t *)json.c_str(), json.length());
         pTxCharacteristic->notify();
       } else if (value.startsWith("B:")) {
@@ -1181,7 +1183,9 @@ void loop() {
       String json = "{\"m\":" + String((int)currentAppMode) +
                     ",\"s\":" + String(score) + ",\"k\":" + String(score) +
                     ",\"l\":" + String(difficulty) +
-                    ",\"b\":" + String(batteryPct) + "}";
+                    ",\"b\":" + String(batteryPct) +
+                    ",\"p\":" + String(isPaused ? 1 : 0) +
+                    ",\"d\":" + String(isDemoMode ? 1 : 0) + "}";
       pTxCharacteristic->setValue((uint8_t *)json.c_str(), json.length());
       pTxCharacteristic->notify();
     }

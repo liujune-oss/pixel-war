@@ -1052,6 +1052,34 @@
             return "极难 (Level " + level + ")";
         }
 
+        function updatePauseUI(isPaused) {
+            const btn = document.getElementById('btnStopGame');
+            const span = btn.querySelector('span');
+            if (isPaused === 1) {
+                btn.classList.remove('btn-danger-outline');
+                btn.classList.add('btn-primary');
+                span.textContent = "恢复游戏";
+            } else {
+                btn.classList.remove('btn-primary');
+                btn.classList.add('btn-danger-outline');
+                span.textContent = "暂停游戏";
+            }
+        }
+
+        function updateDemoUI(isDemo) {
+            const btn = document.getElementById('btnRunDemo');
+            const span = btn.querySelector('span');
+            if (isDemo === 1) {
+                btn.classList.remove('btn-surface');
+                btn.classList.add('btn-primary');
+                span.textContent = "结束演示";
+            } else {
+                btn.classList.remove('btn-primary');
+                btn.classList.add('btn-surface');
+                span.textContent = "运行演示";
+            }
+        }
+
         function updateActiveGameUI(modeId) {
             const titleEl = document.getElementById('activeGameTitle');
             const descEl = document.getElementById('activeGameDesc');
@@ -1174,6 +1202,8 @@
                         s.value = data.diff;
                         document.getElementById('difficultyLevelStr').textContent = getDifficultyString(data.diff);
                     }
+                    if (data.p !== undefined) updatePauseUI(data.p);
+                    if (data.d !== undefined) updateDemoUI(data.d);
                     return;
                 }
 
@@ -1186,6 +1216,8 @@
                     document.getElementById('batteryValue').textContent = data.b + "%";
                     document.getElementById('settingsBatteryValue').textContent = data.b + "%";
                 }
+                if (data.p !== undefined) updatePauseUI(data.p);
+                if (data.d !== undefined) updateDemoUI(data.d);
             } catch (err) {
                 console.log("[BLE RX TEXT] " + str); // Not JSON
             }

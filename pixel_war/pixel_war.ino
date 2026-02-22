@@ -1018,15 +1018,21 @@ void flappyBird_update() {
     // 每 10 秒收缩一层像素
     float shrinkAmount = (float)surviveTime / 10000.0;
 
+    // 随时间推移，通道中心点开始上下浮动 (正弦波)
+    // 周期随难度稍微加快，幅度随存活时间逐渐增加，最大幅度 +/- 15 像素
+    float maxOscillation = min(15.0f, (float)surviveTime / 2000.0f);
+    float speedFactor = 1000.0 - (difficulty * 30.0);
+    float centerOffset = sin((float)now / speedFactor) * maxOscillation;
+    float currentCenter = 50.0 + centerOffset;
+
     float baseGap = 60.0 - (difficulty * 2.0);
-    flappyCloudBoundary = 50.0 + (baseGap / 2) - shrinkAmount;
-    flappyGroundBoundary = 50.0 - (baseGap / 2) + shrinkAmount;
+    flappyCloudBoundary = currentCenter + (baseGap / 2) - shrinkAmount;
+    flappyGroundBoundary = currentCenter - (baseGap / 2) + shrinkAmount;
 
     // 最低限度保留 15 像素空隙
     if (flappyCloudBoundary - flappyGroundBoundary < 15.0) {
-      float center = 50.0;
-      flappyCloudBoundary = center + 7.5;
-      flappyGroundBoundary = center - 7.5;
+      flappyCloudBoundary = currentCenter + 7.5;
+      flappyGroundBoundary = currentCenter - 7.5;
     }
 
     // 碰撞检测
@@ -1054,10 +1060,13 @@ void flappyBird_drawIdleScreen() {
   strip.setPixelColor(yy + 1, strip.Color(255, 255, 0));
   strip.setPixelColor(yy - 1, strip.Color(255, 255, 0));
 
-  // 画两端基准边界
+  // 画两端基准边界 (待机时展示稍微浮动的通道)
+  float centerOffset = sin(now / 1000.0) * 10.0;
+  float currentCenter = 50.0 + centerOffset;
   float baseGap = 60.0 - (difficulty * 2.0);
-  int ct = 50.0 + (baseGap / 2);
-  int gb = 50.0 - (baseGap / 2);
+  int ct = currentCenter + (baseGap / 2);
+  int gb = currentCenter - (baseGap / 2);
+
   for (int i = 0; i <= gb; i++)
     strip.setPixelColor(i, strip.Color(0, 20, 0));
   for (int i = ct; i < NUM_LEDS; i++)

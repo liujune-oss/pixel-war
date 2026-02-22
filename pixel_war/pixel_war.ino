@@ -242,7 +242,11 @@ class RxCallbacks : public BLECharacteristicCallbacks {
         }
       } else if (value == "DEMO") {
         isDemoMode = !isDemoMode;
-        lightBeam_initGame();
+        if (isDemoMode) {
+          lightBeam_initGame();
+        } else {
+          currentState = STATE_IDLE;
+        }
       } else if (value == "SYNC") {
         String json = "{\"type\":\"sync\",\"fw\":\"" + String(FW_VERSION) +
                       "\",\"m\":" + String((int)currentAppMode) +

@@ -178,6 +178,9 @@ float flappyGravity = -0.12;       // Constant downward pull (towards 0/ground)
 float flappyJumpStrength = 1.8;    // Upward velocity on GREEN press
 float flappyCloudBoundary = 90.0;  // Ceiling lowering downwards
 float flappyGroundBoundary = 10.0; // Floor rising upwards
+float flappyGapCenter = 50.0;      // Current center of the safe gap
+float flappyGapSpeed = 0.0;        // Vertical velocity of the safe gap
+unsigned long flappyGapTurnTimer = 0; // Timer to compute next random gap turn
 unsigned long flappyLastUpdate = 0;
 unsigned long flappySurviveStart = 0;
 unsigned long flappyScore = 0;
@@ -993,13 +996,17 @@ void lightBeam_handleButtons() {
 // =========================================================================
 
 void flappyBird_initGame() {
-  flappyBirdY = 50.0;
+  flappyBirdY = NUM_LEDS / 2.0;
   flappyVelocity = 0.0;
 
   // 难度滑块影响初始空隙
   float baseGap = 60.0 - (difficulty * 2.0);
-  flappyCloudBoundary = 50.0 + (baseGap / 2);  // 顶部云层
-  flappyGroundBoundary = 50.0 - (baseGap / 2); // 底部地面
+  flappyGapCenter = NUM_LEDS / 2.0;
+  flappyGapSpeed = 0.0;
+  flappyGapTurnTimer = millis() + 1000;
+
+  flappyCloudBoundary = flappyGapCenter + (baseGap / 2);  // 顶部云层
+  flappyGroundBoundary = flappyGapCenter - (baseGap / 2); // 底部地面
 
   flappyScore = 0;
   flappySurviveStart = millis();
@@ -1025,22 +1032,35 @@ void flappyBird_update() {
     // 每 10 秒收缩一层像素
     float shrinkAmount = (float)surviveTime / 10000.0;
 
-    // 随时间推移，通道中心点开始上下浮动 (正弦波)
-    // 根据当前难度决定的基础缝隙，计算中心点允许移动的最大极限，避免边界被顶出屏幕
+    // 随时间推移，通道中心点进行线性移动与随机拐弯
     float baseGap = 60.0 - (difficulty * 2.0);
     float currentGap = baseGap - (shrinkAmount * 2);
-    // 中心点可移动的空间范围：假设灯带0-99，有效移动范围大约是从 currentGap/2
-    // 到 100-currentGap/2
-    float maxAllowedOffset = 50.0 - (currentGap / 2) - 1.0;
 
-    // 幅度随存活时间逐渐增加，直到达到当前允许的最大范围
-    float maxOscillation = min(maxAllowedOffset, (float)surviveTime / 1500.0f);
-    float speedFactor = 1000.0 - (difficulty * 30.0);
-    float centerOffset = sin((float)now / speedFactor) * maxOscillation;
-    float currentCenter = 50.0 + centerOffset;
+    // 中心点可移动的空间极限
+    float minCenter = (currentGap / 2) + 1.0;
+    float maxCenter = NUM_LEDS - (currentGap / 2) - 1.0;
 
-    flappyCloudBoundary = currentCenter + (baseGap / 2) - shrinkAmount;
-    flappyGroundBoundary = currentCenter - (baseGap / 2) + shrinkAmount;
+    if (now > flappyGapTurnTimer) {
+      flappyGapTurnTimer =
+          now + random(500, 2500); // 0.5~2.5秒随机改变一次速度和方向
+      float speedMult = 0.3 + (difficulty * 0.1); // 速度上限随难度增加
+      flappyGapSpeed = (random(-100, 100) / 100.0) * speedMult;
+    }
+
+    // 叠加位移
+    flappyGapCenter += flappyGapSpeed;
+
+    // 触碰到极限边界时强行反弹
+    if (flappyGapCenter < minCenter) {
+      flappyGapCenter = minCenter;
+      flappyGapSpeed = abs(flappyGapSpeed);
+    } else if (flappyGapCenter > maxCenter) {
+      flappyGapCenter = maxCenter;
+      flappyGapSpeed = -abs(flappyGapSpeed);
+    }
+
+    flappyCloudBoundary = flappyGapCenter + (currentGap / 2);
+    flappyGroundBoundary = flappyGapCenter - (currentGap / 2);
 
     // 最低限度保留 15 像素空隙
     if (flappyCloudBoundary - flappyGroundBoundary < 15.0) {
@@ -1068,17 +1088,18 @@ void flappyBird_drawIdleScreen() {
   strip.clear();
   // 待机动画：小鸟在中间上下浮动
   unsigned long now = millis();
-  int yy = 50 + sin(now / 300.0) * 5;
+  float middle = NUM_LEDS / 2.0;
+  int yy = middle + sin(now / 300.0) * 5;
   strip.setPixelColor(yy, strip.Color(255, 255, 0));
   strip.setPixelColor(yy + 1, strip.Color(255, 255, 0));
   strip.setPixelColor(yy - 1, strip.Color(255, 255, 0));
 
   // 画两端基准边界 (待机时展示大幅度浮动的通道)
   float baseGap = 60.0 - (difficulty * 2.0);
-  float maxAllowedOffset = 50.0 - (baseGap / 2) - 1.0;
+  float maxAllowedOffset = middle - (baseGap / 2) - 1.0;
   float centerOffset =
       sin(now / 1000.0) * maxAllowedOffset; // 待机时直接展示最大幅度
-  float currentCenter = 50.0 + centerOffset;
+  float currentCenter = middle + centerOffset;
   int ct = currentCenter + (baseGap / 2);
   int gb = currentCenter - (baseGap / 2);
 

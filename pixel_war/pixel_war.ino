@@ -324,6 +324,11 @@ class RxCallbacks : public BLECharacteristicCallbacks {
           currentState = STATE_IDLE; // Switch mode resets the game state
           lightBeam_initGame();
           audio.play1UP();
+        } else if (newMode == 1) {
+          currentAppMode = MODE_FLAPPY_BIRD;
+          currentState = STATE_IDLE;
+          flappyBird_initGame();
+          audio.play1UP();
         }
       }
     }

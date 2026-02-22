@@ -1067,10 +1067,9 @@ void flappyBird_update() {
       flappyGroundBoundary = flappyGapCenter - 7.5;
     }
 
-    // 碰撞检测
-    // 鸟占用 [flappyBirdY - 1, flappyBirdY + 1] (3颗灯珠)
-    if (flappyBirdY + 1 >= flappyCloudBoundary ||
-        flappyBirdY - 1 <= flappyGroundBoundary) {
+    // 碰撞检测 (仅用中心像素判定)
+    if (flappyBirdY >= flappyCloudBoundary ||
+        flappyBirdY <= flappyGroundBoundary) {
       currentState = STATE_GAME_OVER;
       gameOverAnimTimer = millis();
       if (score > highScore) {
@@ -1124,15 +1123,18 @@ void flappyBird_drawLEDs() {
     strip.setPixelColor(i, strip.Color(40, 40, 40));
   }
 
-  // 画鸟 (黄色, 3像素)
+  // 画鸟 (黄色, 安全区域<=24像素时缩为1像素, 否则3像素)
   int by = (int)flappyBirdY;
   uint32_t birdColor = strip.Color(255, 255, 0);
+  float currentGapSize = flappyCloudBoundary - flappyGroundBoundary;
   if (by >= 0 && by < NUM_LEDS)
     strip.setPixelColor(by, birdColor);
-  if (by + 1 < NUM_LEDS)
-    strip.setPixelColor(by + 1, birdColor);
-  if (by - 1 >= 0)
-    strip.setPixelColor(by - 1, birdColor);
+  if (currentGapSize > 24.0) {
+    if (by + 1 < NUM_LEDS)
+      strip.setPixelColor(by + 1, birdColor);
+    if (by - 1 >= 0)
+      strip.setPixelColor(by - 1, birdColor);
+  }
 
   stripShowSafe();
 }

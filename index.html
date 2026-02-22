@@ -796,7 +796,31 @@
                     </div>
                 </section>
 
-                <!-- Game 2: Snake (Coming Soon) -->
+                <!-- Game 2: Pixel Bird -->
+                <section class="card-section mt-4">
+                    <div class="device-card bg-surface game-card" data-mode="1">
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
+                            <div>
+                                <h3
+                                    style="font-size: 20px; font-weight: 700; color: var(--primary); margin-bottom: 4px;">
+                                    像素小鸟</h3>
+                                <p style="color: var(--text-secondary); font-size: 13px;">Pixel Bird</p>
+                            </div>
+                            <i data-lucide="bird" style="color: var(--primary);"></i>
+                        </div>
+                        <p
+                            style="color: var(--text-secondary); font-size: 14px; line-height: 1.5; margin-bottom: 20px;">
+                            单键控制小鸟起飞，在不断收缩的云朵与地面间极限求生！
+                        </p>
+                        <button class="btn btn-surface-outline btn-full launch-btn" data-mode="1">
+                            <i data-lucide="play" class="btn-icon"></i>
+                            <span class="launch-btn-text">启动此应用</span>
+                        </button>
+                    </div>
+                </section>
+
+                <!-- Game 3: Snake (Coming Soon) -->
                 <section class="card-section mt-4">
                     <div class="device-card bg-surface" style="opacity: 0.5;">
                         <div
@@ -1087,6 +1111,9 @@
             if (modeId === 0) {
                 titleEl.textContent = "光线消消乐";
                 descEl.textContent = "按颜色消除向你逼近的敌人，撑到最后即可过关。";
+            } else if (modeId === 1) {
+                titleEl.textContent = "像素小鸟";
+                descEl.textContent = "单键控制小鸟起飞，在不断收缩的云朵与地面间极限求生！";
             } else {
                 titleEl.textContent = "未知应用 (" + modeId + ")";
                 descEl.textContent = "无法识别的程序正在运行。";

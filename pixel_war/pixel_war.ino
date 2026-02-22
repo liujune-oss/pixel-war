@@ -89,8 +89,11 @@ const uint32_t COLOR_OFF = 0x000000;
 const int MAX_PIXELS = NUM_LEDS; // 同屏最大像素对象数
 const String FW_VERSION = "v1.2.0";
 
-// ================= [NEW] Game Engine Architecture =================
-enum GameMode { MODE_LIGHT_BEAM = 0 };
+// ================= 3. 定义全局状态与变量 =================
+enum GameMode {
+  MODE_LIGHT_BEAM = 0, // 经典模式：光线消消乐
+  MODE_FLAPPY_BIRD = 1 // 模式2：像素小鸟
+};
 GameMode currentAppMode = MODE_LIGHT_BEAM;
 
 // ================= 3. 游戏数据结构 =================
@@ -167,6 +170,17 @@ bool longPressHandledRed = false;
 int settingsMode = 0; // 0=亮度, 1=音量, 2=难度
 const int SETTINGS_MODE_COUNT = 3;
 const int SETTING_STEP = 10;
+
+// ================= [NEW] Flappy Bird Variables =================
+float flappyBirdY = 50.0;
+float flappyVelocity = 0.0;
+float flappyGravity = -0.12;       // Constant downward pull (towards 0/ground)
+float flappyJumpStrength = 1.8;    // Upward velocity on GREEN press
+float flappyCloudBoundary = 90.0;  // Ceiling lowering downwards
+float flappyGroundBoundary = 10.0; // Floor rising upwards
+unsigned long flappyLastUpdate = 0;
+unsigned long flappySurviveStart = 0;
+unsigned long flappyScore = 0;
 
 // ================= 10. 全局变量 =================
 // 屏保
@@ -962,6 +976,215 @@ void lightBeam_handleButtons() {
   lastStateBlue = rBlue;
 }
 
+// =========================================================================
+//                             [NEW] 像素小鸟 (Pixel Bird)
+// =========================================================================
+
+void flappyBird_initGame() {
+  flappyBirdY = 50.0;
+  flappyVelocity = 0.0;
+
+  // 难度滑块影响初始空隙
+  float baseGap = 60.0 - (difficulty * 2.0);
+  flappyCloudBoundary = 50.0 + (baseGap / 2);  // 顶部云层
+  flappyGroundBoundary = 50.0 - (baseGap / 2); // 底部地面
+
+  flappyScore = 0;
+  flappySurviveStart = millis();
+  flappyLastUpdate = millis();
+
+  currentState = STATE_PLAYING;
+  audio.playBeep(); // 提示游戏开始
+}
+
+void flappyBird_update() {
+  unsigned long now = millis();
+  if (now - flappyLastUpdate >= 20) { // 50 FPS 物理模拟
+    flappyLastUpdate = now;
+
+    // 应用重力
+    flappyVelocity += flappyGravity;
+    flappyBirdY += flappyVelocity;
+
+    // 边界收缩难度控制 (存活时间越长越难)
+    unsigned long surviveTime = now - flappySurviveStart;
+    flappyScore = surviveTime / 1000;
+
+    // 每 10 秒收缩一层像素
+    float shrinkAmount = (float)surviveTime / 10000.0;
+
+    float baseGap = 60.0 - (difficulty * 2.0);
+    flappyCloudBoundary = 50.0 + (baseGap / 2) - shrinkAmount;
+    flappyGroundBoundary = 50.0 - (baseGap / 2) + shrinkAmount;
+
+    // 最低限度保留 15 像素空隙
+    if (flappyCloudBoundary - flappyGroundBoundary < 15.0) {
+      float center = 50.0;
+      flappyCloudBoundary = center + 7.5;
+      flappyGroundBoundary = center - 7.5;
+    }
+
+    // 碰撞检测
+    // 鸟占用 [flappyBirdY - 1, flappyBirdY + 1] (3颗灯珠)
+    if (flappyBirdY + 1 >= flappyCloudBoundary ||
+        flappyBirdY - 1 <= flappyGroundBoundary) {
+      currentState = STATE_GAME_OVER;
+      gameOverAnimTimer = millis();
+      score = flappyScore; // 更新全局分数
+      if (score > highScore) {
+        highScore = score;
+        saveData();
+      }
+      audio.playGameOver();
+    }
+  }
+}
+
+void flappyBird_drawIdleScreen() {
+  strip.clear();
+  // 待机动画：小鸟在中间上下浮动
+  unsigned long now = millis();
+  int yy = 50 + sin(now / 300.0) * 5;
+  strip.setPixelColor(yy, strip.Color(255, 255, 0));
+  strip.setPixelColor(yy + 1, strip.Color(255, 255, 0));
+  strip.setPixelColor(yy - 1, strip.Color(255, 255, 0));
+
+  // 画两端基准边界
+  float baseGap = 60.0 - (difficulty * 2.0);
+  int ct = 50.0 + (baseGap / 2);
+  int gb = 50.0 - (baseGap / 2);
+  for (int i = 0; i <= gb; i++)
+    strip.setPixelColor(i, strip.Color(0, 20, 0));
+  for (int i = ct; i < NUM_LEDS; i++)
+    strip.setPixelColor(i, strip.Color(20, 20, 20));
+
+  stripShowSafe();
+}
+
+void flappyBird_drawLEDs() {
+  strip.clear();
+
+  // 画地面 (底部，暗绿色)
+  int groundTop = max(0, (int)flappyGroundBoundary);
+  for (int i = 0; i <= groundTop; i++) {
+    strip.setPixelColor(i, strip.Color(0, 40, 0));
+  }
+
+  // 画云朵 (顶部，暗白色)
+  int cloudBottom = min(NUM_LEDS - 1, (int)flappyCloudBoundary);
+  for (int i = cloudBottom; i < NUM_LEDS; i++) {
+    strip.setPixelColor(i, strip.Color(40, 40, 40));
+  }
+
+  // 画鸟 (黄色, 3像素)
+  int by = (int)flappyBirdY;
+  uint32_t birdColor = strip.Color(255, 255, 0);
+  if (by >= 0 && by < NUM_LEDS)
+    strip.setPixelColor(by, birdColor);
+  if (by + 1 < NUM_LEDS)
+    strip.setPixelColor(by + 1, birdColor);
+  if (by - 1 >= 0)
+    strip.setPixelColor(by - 1, birdColor);
+
+  stripShowSafe();
+}
+
+void flappyBird_drawGameOver() {
+  strip.clear();
+  unsigned long animTime = millis() - gameOverAnimTimer;
+
+  int groundTop = max(0, (int)flappyGroundBoundary);
+  for (int i = 0; i <= groundTop; i++)
+    strip.setPixelColor(i, strip.Color(0, 40, 0));
+  int cloudBottom = min(NUM_LEDS - 1, (int)flappyCloudBoundary);
+  for (int i = cloudBottom; i < NUM_LEDS; i++)
+    strip.setPixelColor(i, strip.Color(40, 40, 40));
+
+  // 死掉的鸟闪烁红光
+  if (animTime < 3000) {
+    if ((animTime / 150) % 2 == 0) {
+      int by = (int)flappyBirdY;
+      uint32_t deadColor = strip.Color(255, 0, 0);
+      if (by >= 0 && by < NUM_LEDS)
+        strip.setPixelColor(by, deadColor);
+      if (by + 1 < NUM_LEDS)
+        strip.setPixelColor(by + 1, deadColor);
+      if (by - 1 >= 0)
+        strip.setPixelColor(by - 1, deadColor);
+    }
+  }
+  stripShowSafe();
+}
+
+void flappyBird_handleButtons() {
+  unsigned long now = millis();
+  int rGreen = digitalRead(PIN_BTN_GREEN);
+  int rRed = digitalRead(PIN_BTN_RED);
+  int rBlue = digitalRead(PIN_BTN_BLUE);
+
+  // 唤醒屏保
+  if (rGreen == LOW || rRed == LOW || rBlue == LOW) {
+    lastActivityTime = now;
+    if (isScreenSaver) {
+      isScreenSaver = false;
+      lastStateGreen = rGreen;
+      lastStateRed = rRed;
+      lastStateBlue = rBlue;
+      lastButtonPress = now;
+      return;
+    }
+  }
+
+  if (currentState == STATE_IDLE) {
+    if (now - lastButtonPress > BUTTON_COOLDOWN) {
+      if ((rGreen == LOW && lastStateGreen == HIGH) ||
+          (rRed == LOW && lastStateRed == HIGH) ||
+          (rBlue == LOW && lastStateBlue == HIGH)) {
+        lastButtonPress = now;
+        flappyBird_initGame();
+      }
+    }
+  } else if (currentState == STATE_PLAYING) {
+    if (!isPaused) {
+      // 绿键跳跃
+      if (rGreen == LOW && lastStateGreen == HIGH) {
+        if (now - lastButtonPress > 100) {
+          lastButtonPress = now;
+          flappyVelocity = flappyJumpStrength; // 向上跳跃冲量
+          audio.playShoot();                   // 音效
+        }
+      }
+    }
+    // 长按红键设置
+    if (rRed == LOW && lastStateRed == HIGH) {
+      pressTimeRed = now;
+      longPressHandledRed = false;
+    }
+    if (rRed == LOW && !longPressHandledRed && (now - pressTimeRed > 3000)) {
+      longPressHandledRed = true;
+      currentState = STATE_SETTINGS;
+      settingsMode = 0;
+      audio.play1UP();
+      while (digitalRead(PIN_BTN_RED) == LOW)
+        delay(10);
+    }
+  } else if (currentState == STATE_GAME_OVER) {
+    if (now - lastButtonPress > 1000) {
+      if ((rGreen == LOW && lastStateGreen == HIGH) ||
+          (rRed == LOW && lastStateRed == HIGH) ||
+          (rBlue == LOW && lastStateBlue == HIGH)) {
+        lastButtonPress = now;
+        currentState = STATE_IDLE;
+        audio.playBeep();
+      }
+    }
+  }
+
+  lastStateRed = rRed;
+  lastStateGreen = rGreen;
+  lastStateBlue = rBlue;
+}
+
 // ================= 11. 屏保检测 =================
 void checkSleepTimeout() {
   if (!isScreenSaver && (millis() - lastActivityTime > SLEEP_TIMEOUT)) {
@@ -1065,6 +1288,8 @@ void loop() {
   if (isScreenSaver) {
     if (currentAppMode == MODE_LIGHT_BEAM) {
       lightBeam_handleButtons();
+    } else if (currentAppMode == MODE_FLAPPY_BIRD) {
+      flappyBird_handleButtons();
     }
     delay(100);
     return;
@@ -1174,6 +1399,21 @@ void loop() {
       if (isDemoMode && (now - gameOverAnimTimer > 6000)) {
         lightBeam_initGame();
       }
+    }
+    break;
+
+  case MODE_FLAPPY_BIRD:
+    flappyBird_handleButtons();
+
+    if (currentState == STATE_IDLE) {
+      flappyBird_drawIdleScreen();
+    } else if (currentState == STATE_PLAYING) {
+      if (!isPaused) {
+        flappyBird_update();
+      }
+      flappyBird_drawLEDs();
+    } else if (currentState == STATE_GAME_OVER) {
+      flappyBird_drawGameOver();
     }
     break;
   }

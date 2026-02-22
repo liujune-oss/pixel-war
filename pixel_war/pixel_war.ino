@@ -1064,8 +1064,8 @@ void flappyBird_update() {
 
     // 最低限度保留 15 像素空隙
     if (flappyCloudBoundary - flappyGroundBoundary < 15.0) {
-      flappyCloudBoundary = currentCenter + 7.5;
-      flappyGroundBoundary = currentCenter - 7.5;
+      flappyCloudBoundary = flappyGapCenter + 7.5;
+      flappyGroundBoundary = flappyGapCenter - 7.5;
     }
 
     // 碰撞检测

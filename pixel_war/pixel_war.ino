@@ -324,11 +324,13 @@ class RxCallbacks : public BLECharacteristicCallbacks {
           currentState = STATE_IDLE; // Switch mode resets the game state
           lightBeam_initGame();
           audio.play1UP();
+          saveData();
         } else if (newMode == 1) {
           currentAppMode = MODE_FLAPPY_BIRD;
           currentState = STATE_IDLE;
           flappyBird_initGame();
           audio.play1UP();
+          saveData();
         }
       }
     }
@@ -399,6 +401,10 @@ void loadData() {
   currentBrightness = prefs.getInt("brt", 30);
   currentVolume = prefs.getInt("vol", 30);
   difficulty = prefs.getInt("diff", 1);
+  int savedMode = prefs.getInt("mode", 0);
+  if (savedMode >= 0 && savedMode <= 1) {
+    currentAppMode = (GameMode)savedMode;
+  }
   prefs.end();
 
   audio.setVolume(currentVolume);
@@ -410,6 +416,7 @@ void saveData() {
   prefs.putInt("brt", currentBrightness);
   prefs.putInt("vol", currentVolume);
   prefs.putInt("diff", difficulty);
+  prefs.putInt("mode", (int)currentAppMode);
   prefs.end();
 }
 

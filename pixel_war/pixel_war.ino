@@ -1035,7 +1035,7 @@ void flappyBird_update() {
         highScore = score;
         saveData();
       }
-      audio.playGameOver();
+      audio.playBad();
     }
   }
 }
@@ -1151,7 +1151,7 @@ void flappyBird_handleButtons() {
         if (now - lastButtonPress > 100) {
           lastButtonPress = now;
           flappyVelocity = flappyJumpStrength; // 向上跳跃冲量
-          audio.playShoot();                   // 音效
+          audio.playHit();                     // 音效
         }
       }
     }

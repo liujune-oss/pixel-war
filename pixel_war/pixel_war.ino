@@ -1039,7 +1039,6 @@ void flappyBird_update() {
     float centerOffset = sin((float)now / speedFactor) * maxOscillation;
     float currentCenter = 50.0 + centerOffset;
 
-    float baseGap = 60.0 - (difficulty * 2.0);
     flappyCloudBoundary = currentCenter + (baseGap / 2) - shrinkAmount;
     flappyGroundBoundary = currentCenter - (baseGap / 2) + shrinkAmount;
 

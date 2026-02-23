@@ -87,7 +87,7 @@ const uint32_t COLOR_OFF = 0x000000;
 
 // 游戏核心参数
 const int MAX_PIXELS = NUM_LEDS; // 同屏最大像素对象数
-const String FW_VERSION = "v2.0.1";
+const String FW_VERSION = "v2.0.3";
 
 // ================= 3. 定义全局状态与变量 =================
 enum GameMode {

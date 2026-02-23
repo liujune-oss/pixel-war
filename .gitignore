@@ -20,6 +20,7 @@ Desktop.ini
 
 # Agents / Workflows
 .agents/
+.agent/
 
 # Secrets
 secrets.h

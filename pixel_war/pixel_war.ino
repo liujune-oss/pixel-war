@@ -1,13 +1,13 @@
 /*
  * Pixel War (像素大战) - ESP32-S3 Version
  * ----------------------------------------
- * 基于 Pixel Caddy 硬件平台的像素射击游戏
+ * 基于 Pixel Caddy 硬件平台的像素射击游�?
  *
  * 游戏规则:
- * - 敌人从灯带远端生成 (红/绿/蓝三色)
- * - 敌人向玩家方向移动
- * - 按对应颜色按键发射子弹
- * - 同色相撞: 双方消失，得分+1
+ * - 敌人从灯带远端生�?(�?�?蓝三�?
+ * - 敌人向玩家方向移�?
+ * - 按对应颜色按键发射子�?
+ * - 同色相撞: 双方消失，得�?1
  * - 异色相撞: 子弹变成敌人
  * - 敌人到达位置0: 游戏结束
  * ----------------------------------------
@@ -34,15 +34,15 @@
 #include "secrets.h"
 
 // ================= 1. 硬件引脚 (ESP32-S3) =================
-#define PIN_LED_STRIP 8 // D9 (GPIO 8) - WS2812 数据线
+#define PIN_LED_STRIP 8 // D9 (GPIO 8) - WS2812 数据�?
 #define PIN_BTN_RED 3   // D2 (GPIO 3) - 红色按键
 #define PIN_BTN_GREEN 2 // D1 (GPIO 2) - 绿色按键
 #define PIN_BTN_BLUE 4  // D3 (GPIO 4) - 蓝色按键
-#define PIN_BUZZER 1    // D0 (GPIO 1) - 蜂鸣器
+#define PIN_BUZZER 1    // D0 (GPIO 1) - 蜂鸣�?
 #define PIN_BATTERY 5   // D4 (GPIO 5) - 电池电压 ADC
 
 // ================= 2. LED 灯带配置 =================
-#define NUM_LEDS 180             // 灯带总灯数
+#define NUM_LEDS 180             // 灯带总灯�?
 #define PLAYER_POS 0             // 玩家位置 (近端)
 #define SPAWN_POS (NUM_LEDS - 1) // 敌人生成位置 (远端)
 
@@ -54,17 +54,17 @@ void stripShowSafe() {
   uint32_t totalSum = 0;
   uint16_t numBytes = NUM_LEDS * 3; // NEO_GRB
 
-  // 1. 统计当前缓冲区的所有亮度值
+  // 1. 统计当前缓冲区的所有亮度�?
   for (uint16_t i = 0; i < numBytes; i++) {
     totalSum += pixels[i];
   }
 
   // 2. 估算电流 (mA)
-  // 假设全白 (765) = 60mA -> 1个单位值 ≈ 0.0784mA
+  // 假设全白 (765) = 60mA -> 1个单位�?�?0.0784mA
   // 加上 ESP32 基础功耗约 100mA
   float estimatedCurrent = (totalSum * 0.0784) + 100;
 
-  const float MAX_CURRENT_MA = 2000.0; // 限制在 2000mA (安全值)
+  const float MAX_CURRENT_MA = 2000.0; // 限制�?2000mA (安全�?
 
   // 3. 如果超标，计算缩放比例并应用
   if (estimatedCurrent > MAX_CURRENT_MA) {
@@ -87,29 +87,29 @@ const uint32_t COLOR_OFF = 0x000000;
 
 // 游戏核心参数
 const int MAX_PIXELS = NUM_LEDS; // 同屏最大像素对象数
-const String FW_VERSION = "v2.0.0";
+const String FW_VERSION = "v2.0.1";
 
 // ================= 3. 定义全局状态与变量 =================
 enum GameMode {
   MODE_LIGHT_BEAM = 0, // 经典模式：光线消消乐
-  MODE_FLAPPY_BIRD = 1 // 模式2：像素小鸟
+  MODE_FLAPPY_BIRD = 1 // 模式2：像素小�?
 };
 GameMode currentAppMode = MODE_LIGHT_BEAM;
 
 // ================= 3. 游戏数据结构 =================
 struct GamePixel {
   int position; // 0-255
-  int color;    // 1=红, 2=绿, 3=蓝
+  int color;    // 1=�? 2=�? 3=�?
   bool isEnemy; // true=敌人, false=子弹
-  bool active;  // 是否激活
+  bool active;  // 是否激�?
 };
 
 GamePixel pixels[MAX_PIXELS];
 
 // 状态机
 enum GameState {
-  STATE_IDLE,      // 待机/开始画面
-  STATE_PLAYING,   // 游戏进行中
+  STATE_IDLE,      // 待机/开始画�?
+  STATE_PLAYING,   // 游戏进行�?
   STATE_GAME_OVER, // 游戏结束
   STATE_SETTINGS   // 设置菜单
 };
@@ -152,7 +152,7 @@ int waveEnemyCount = 3;          // 每波敌人数量
 int waveEnemiesSpawned = 0;      // 当前波已生成的敌人数
 int waveNumber = 0;              // 当前波次编号
 bool waveActive = true;          // 当前是否在出敌人
-unsigned long waveRestStart = 0; // 波间休息开始时间
+unsigned long waveRestStart = 0; // 波间休息开始时�?
 int waveRestDuration = 3000;     // 波间休息时长 (ms)
 
 // 按键防抖
@@ -162,7 +162,7 @@ int lastStateRed = HIGH;
 int lastStateGreen = HIGH;
 int lastStateBlue = HIGH;
 
-// 长按检测
+// 长按检�?
 unsigned long pressTimeRed = 0;
 bool longPressHandledRed = false;
 
@@ -263,6 +263,10 @@ class RxCallbacks : public BLECharacteristicCallbacks {
         } else {
           currentState = STATE_IDLE;
         }
+      } else if (value == "RST_HS") {
+        highScore = 0;
+        saveData();
+        Serial.println("High score reset to 0");
       } else if (value == "SYNC") {
         String json = "{\"type\":\"sync\",\"fw\":\"" + String(FW_VERSION) +
                       "\",\"m\":" + String((int)currentAppMode) +
@@ -340,10 +344,10 @@ class RxCallbacks : public BLECharacteristicCallbacks {
 };
 
 // ================= [NEW] Battery Monitor =================
-// 读取电池电压 (单位: mV) - 带滤波
+// 读取电池电压 (单位: mV) - 带滤�?
 int readBatteryVoltage() {
   // ESP32-S3 ADC: 12-bit (0-4095), 参考电压约 3.3V
-  // 电压分压 1:1，实际电压 = ADC电压 × 2
+  // 电压分压 1:1，实际电�?= ADC电压 × 2
   long sum = 0;
   const int samples = 8;
   for (int i = 0; i < samples; i++) {
@@ -355,7 +359,7 @@ int readBatteryVoltage() {
   return batteryMV;
 }
 
-// 转换电压为百分比 - 5 位滑动窗口滤波
+// 转换电压为百分比 - 5 位滑动窗口滤�?
 int mvHistory[5] = {0, 0, 0, 0, 0};
 int mvHistoryIndex = 0;
 bool mvHistoryFilled = false;
@@ -377,9 +381,9 @@ int getBatteryPercent() {
   }
   int avgMv = sum / count;
 
-  // [调试] 输出原始电压值
+  // [调试] 输出原始电压�?
   static unsigned long lastDebugTime = 0;
-  if (millis() - lastDebugTime > 10000) { // 每10秒输出一次
+  if (millis() - lastDebugTime > 10000) { // �?0秒输出一�?
     lastDebugTime = millis();
     Serial.printf("[BATT DEBUG] Raw mV: %d, Avg mV: %d\n", mv, avgMv);
   }
@@ -453,14 +457,14 @@ void lightBeam_initGame() {
   enemyMoveInterval = 150;
   enemySpawnInterval = 800;
 
-  // 波次初始化
+  // 波次初始�?
   waveNumber = 0;
   waveEnemyCount = 3;
   waveEnemiesSpawned = 0;
   waveActive = true;
   waveRestDuration = 3000;
 
-  // 清空所有像素
+  // 清空所有像�?
   for (int i = 0; i < MAX_PIXELS; i++) {
     pixels[i].active = false;
   }
@@ -486,7 +490,7 @@ void lightBeam_spawnEnemy() {
   if (slot < 0)
     return;
 
-  // 检查生成位置是否已被占用
+  // 检查生成位置是否已被占�?
   for (int i = 0; i < MAX_PIXELS; i++) {
     if (pixels[i].active && pixels[i].position >= SPAWN_POS - 5) {
       return; // 太拥挤了，不生成
@@ -504,10 +508,10 @@ void lightBeam_spawnBullet(int color) {
   if (slot < 0)
     return;
 
-  // 检查发射位置是否已被占用
+  // 检查发射位置是否已被占�?
   for (int i = 0; i < MAX_PIXELS; i++) {
     if (pixels[i].active && pixels[i].position <= 3 && !pixels[i].isEnemy) {
-      return; // 发射位置被占用
+      return; // 发射位置被占�?
     }
   }
 
@@ -528,7 +532,7 @@ void lightBeam_checkCollisions() {
       if (!pixels[j].active)
         continue;
 
-      // 检查是否相撞 (位置相同或交叉)
+      // 检查是否相�?(位置相同或交�?
       int dist = abs(pixels[i].position - pixels[j].position);
       if (dist > 2)
         continue;
@@ -538,7 +542,7 @@ void lightBeam_checkCollisions() {
       bool jEnemy = pixels[j].isEnemy;
 
       if (iEnemy == jEnemy)
-        continue; // 同类不碰撞
+        continue; // 同类不碰�?
 
       int enemyIdx = iEnemy ? i : j;
       int bulletIdx = iEnemy ? j : i;
@@ -550,21 +554,21 @@ void lightBeam_checkCollisions() {
         score++;
         audio.playHit();
 
-        // 每10分增加难度
+        // �?0分增加难�?
         if (score % 10 == 0 && score > 0) {
           difficulty++;
           if (difficulty > 14)
             difficulty = 14;
-          // 敌人移速加快 (最快10ms，与子弹同速)
+          // 敌人移速加�?(最�?0ms，与子弹同�?
           enemyMoveInterval = max(10, 150 - difficulty * 10);
-          // 波次参数由波次系统自动调整
+          // 波次参数由波次系统自动调�?
           audio.play1UP();
         }
       } else {
         // 异色: 子弹变敌人，寻找不重叠的空位
         pixels[bulletIdx].isEnemy = true;
         int targetPos = pixels[enemyIdx].position + 5;
-        // 向远端搜索空闲位置，避免与其他像素重叠
+        // 向远端搜索空闲位置，避免与其他像素重�?
         bool posOccupied = true;
         while (posOccupied && targetPos < NUM_LEDS) {
           posOccupied = false;
@@ -591,7 +595,7 @@ void lightBeam_updateEnemies() {
 
     pixels[i].position--;
 
-    // 检查是否到达玩家位置
+    // 检查是否到达玩家位�?
     if (pixels[i].position <= PLAYER_POS) {
       currentState = STATE_GAME_OVER;
       if (score > highScore) {
@@ -628,14 +632,14 @@ void lightBeam_drawLEDs() {
     uint8_t r = (uint8_t)(c >> 16);
     uint8_t g = (uint8_t)(c >> 8);
     uint8_t b = (uint8_t)c;
-    // 衰减到约80%亮度，产生较长拖尾效果
+    // 衰减到约80%亮度，产生较长拖尾效�?
     r = r * 4 / 5;
     g = g * 4 / 5;
     b = b * 4 / 5;
     strip.setPixelColor(i, strip.Color(r, g, b));
   }
 
-  // 绘制所有像素
+  // 绘制所有像�?
   for (int i = 0; i < MAX_PIXELS; i++) {
     if (!pixels[i].active)
       continue;
@@ -645,7 +649,7 @@ void lightBeam_drawLEDs() {
     uint32_t color = getColorByType(pixels[i].color);
     strip.setPixelColor(pixels[i].position, color);
 
-    // 敌人手动拖尾: 在移动方向后方绘制渐变尾巴
+    // 敌人手动拖尾: 在移动方向后方绘制渐变尾�?
     if (pixels[i].isEnemy) {
       uint8_t cr = (uint8_t)(color >> 16);
       uint8_t cg = (uint8_t)(color >> 8);
@@ -688,7 +692,7 @@ void lightBeam_drawIdleScreen() {
 
   strip.clear();
 
-  // 彩虹波效果
+  // 彩虹波效�?
   for (int i = 0; i < NUM_LEDS; i++) {
     int hue = ((i + animPos) * 256 / NUM_LEDS) % 256;
     int brightness = 50;
@@ -727,7 +731,7 @@ void lightBeam_drawGameOver() {
     gameOverAnimFrame++;
   }
 
-  // 前4帧红色闪烁，之后显示分数
+  // �?帧红色闪烁，之后显示分数
   if (gameOverAnimFrame < 8) {
     // 红色闪烁
     strip.clear();
@@ -752,17 +756,17 @@ void lightBeam_drawGameOver() {
   digits[2] = s / 10; // 十位
   digits[3] = s % 10; // 个位
 
-  // 颜色: 千=红, 百=绿, 十=蓝, 个=黄
+  // 颜色: �?�? �?�? �?�? �?�?
   uint32_t digitColors[4] = {COLOR_RED, COLOR_GREEN, COLOR_BLUE, 0xFFAA00};
   int pos = 2; // 起始偏移
 
   for (int d = 0; d < 4; d++) {
     int digit = digits[d];
     int fives = digit / 5; // 几个5
-    int ones = digit % 5;  // 余几个1
+    int ones = digit % 5;  // 余几�?
     uint32_t col = digitColors[d];
 
-    // 画 "5" 的标记 (5个连续像素)
+    // �?"5" 的标�?(5个连续像�?
     for (int f = 0; f < fives; f++) {
       for (int p = 0; p < 5 && pos < NUM_LEDS; p++, pos++) {
         strip.setPixelColor(pos, col);
@@ -771,7 +775,7 @@ void lightBeam_drawGameOver() {
         pos += 2; // 组间间隔2像素
     }
 
-    // 画 "1" 的标记 (1个像素)
+    // �?"1" 的标�?(1个像�?
     for (int o = 0; o < ones; o++) {
       if (pos < NUM_LEDS) {
         strip.setPixelColor(pos, col);
@@ -781,7 +785,7 @@ void lightBeam_drawGameOver() {
         pos += 2; // 组间间隔2像素
     }
 
-    // 白色分隔符 (最后一位后面不加)
+    // 白色分隔�?(最后一位后面不�?
     if (d < 3) {
       pos += 2; // 留空
       for (int w = 0; w < 3 && pos < NUM_LEDS; w++, pos++) {
@@ -812,7 +816,7 @@ void drawSettings() {
     color = COLOR_RED; // 难度 = 红色
   }
 
-  // 显示进度条 (前 value/10 个LED亮)
+  // 显示进度�?(�?value/10 个LED�?
   int litLeds = value * NUM_LEDS / 100;
   for (int i = 0; i < litLeds; i++) {
     strip.setPixelColor(i, color);
@@ -857,7 +861,7 @@ void setupOTA() {
     }
     stripShowSafe();
   } else {
-    // 连接失败，启动 AP 模式
+    // 连接失败，启�?AP 模式
     WiFi.disconnect();
     WiFi.mode(WIFI_AP);
     WiFi.softAP("PixelWar OTA", "12345678");
@@ -892,7 +896,7 @@ void lightBeam_handleButtons() {
     }
   }
 
-  // 组合键: 红+绿 进入 OTA
+  // 组合�? �?�?进入 OTA
   if (rRed == LOW && rGreen == LOW) {
     isOTAMode = true;
     setupOTA();
@@ -903,9 +907,9 @@ void lightBeam_handleButtons() {
     return;
   }
 
-  // 处理不同状态
+  // 处理不同状�?
   if (currentState == STATE_IDLE) {
-    // 任意键开始游戏
+    // 任意键开始游�?
     if (now - lastButtonPress > BUTTON_COOLDOWN) {
       if ((rRed == LOW && lastStateRed == HIGH) ||
           (rGreen == LOW && lastStateGreen == HIGH) ||
@@ -942,9 +946,9 @@ void lightBeam_handleButtons() {
           lightBeam_spawnBullet(3); // 蓝色子弹
         }
       } else {
-        // [暂停状态] 处理恢复和退出
+        // [暂停状态] 处理恢复和退�?
         if (rGreen == LOW && lastStateGreen == HIGH) {
-          // 暂停时按绿键：退出试玩 (DEMO) 并回到 IDLE
+          // 暂停时按绿键：退出试�?(DEMO) 并回�?IDLE
           lastButtonPress = now;
           currentState = STATE_IDLE;
           isPaused = false;
@@ -952,7 +956,7 @@ void lightBeam_handleButtons() {
           lastActivityTime = millis();
         }
         if (rBlue == LOW && lastStateBlue == HIGH) {
-          // 暂停时按蓝键：恢复游戏 (取消暂停)
+          // 暂停时按蓝键：恢复游�?(取消暂停)
           lastButtonPress = now;
           isPaused = false;
           // 恢复时重置计时器防止跳跃
@@ -973,8 +977,8 @@ void lightBeam_handleButtons() {
         delay(10);
     }
   } else if (currentState == STATE_GAME_OVER) {
-    // 任意键返回待机
-    if (now - lastButtonPress > 1000) { // 1秒冷却防止误触
+    // 任意键返回待�?
+    if (now - lastButtonPress > 1000) { // 1秒冷却防止误�?
       if ((rRed == LOW && lastStateRed == HIGH) ||
           (rGreen == LOW && lastStateGreen == HIGH) ||
           (rBlue == LOW && lastStateBlue == HIGH)) {
@@ -1012,7 +1016,7 @@ void flappyBird_initGame() {
   flappyLastUpdate = millis();
 
   currentState = STATE_PLAYING;
-  audio.playBeep(); // 提示游戏开始
+  audio.playBeep(); // 提示游戏开�?
 }
 
 void flappyBird_update() {
@@ -1028,21 +1032,21 @@ void flappyBird_update() {
     unsigned long surviveTime = now - flappySurviveStart;
     score = surviveTime / 1000;
 
-    // 每 10 秒收缩一层像素
+    // �?10 秒收缩一层像�?
     float shrinkAmount = (float)surviveTime / 10000.0;
 
     // 随时间推移，通道中心点进行线性移动与随机拐弯
     float baseGap = 60.0 - (difficulty * 2.0);
     float currentGap = baseGap - (shrinkAmount * 2);
 
-    // 中心点可移动的空间极限
+    // 中心点可移动的空间极�?
     float minCenter = (currentGap / 2) + 1.0;
     float maxCenter = NUM_LEDS - (currentGap / 2) - 1.0;
 
     if (now > flappyGapTurnTimer) {
       flappyGapTurnTimer =
-          now + random(500, 2500); // 0.5~2.5秒随机改变一次速度和方向
-      float speedMult = 0.3 + (difficulty * 0.1); // 速度上限随难度增加
+          now + random(500, 2500); // 0.5~2.5秒随机改变一次速度和方�?
+      float speedMult = 0.3 + (difficulty * 0.1); // 速度上限随难度增�?
       flappyGapSpeed = (random(-100, 100) / 100.0) * speedMult;
     }
 
@@ -1061,13 +1065,13 @@ void flappyBird_update() {
     flappyCloudBoundary = flappyGapCenter + (currentGap / 2);
     flappyGroundBoundary = flappyGapCenter - (currentGap / 2);
 
-    // 最低限度保留 15 像素空隙
+    // 最低限度保�?15 像素空隙
     if (flappyCloudBoundary - flappyGroundBoundary < 15.0) {
       flappyCloudBoundary = flappyGapCenter + 7.5;
       flappyGroundBoundary = flappyGapCenter - 7.5;
     }
 
-    // 碰撞检测 (仅用中心像素判定)
+    // 碰撞检�?(仅用中心像素判定)
     if (flappyBirdY >= flappyCloudBoundary ||
         flappyBirdY <= flappyGroundBoundary) {
       currentState = STATE_GAME_OVER;
@@ -1091,11 +1095,11 @@ void flappyBird_drawIdleScreen() {
   strip.setPixelColor(yy + 1, strip.Color(255, 255, 0));
   strip.setPixelColor(yy - 1, strip.Color(255, 255, 0));
 
-  // 画两端基准边界 (待机时展示大幅度浮动的通道)
+  // 画两端基准边�?(待机时展示大幅度浮动的通道)
   float baseGap = 60.0 - (difficulty * 2.0);
   float maxAllowedOffset = middle - (baseGap / 2) - 1.0;
   float centerOffset =
-      sin(now / 1000.0) * maxAllowedOffset; // 待机时直接展示最大幅度
+      sin(now / 1000.0) * maxAllowedOffset; // 待机时直接展示最大幅�?
   float currentCenter = middle + centerOffset;
   int ct = currentCenter + (baseGap / 2);
   int gb = currentCenter - (baseGap / 2);
@@ -1111,19 +1115,19 @@ void flappyBird_drawIdleScreen() {
 void flappyBird_drawLEDs() {
   strip.clear();
 
-  // 画地面 (底部，暗绿色)
+  // 画地�?(底部，暗绿色)
   int groundTop = max(0, (int)flappyGroundBoundary);
   for (int i = 0; i <= groundTop; i++) {
     strip.setPixelColor(i, strip.Color(0, 40, 0));
   }
 
-  // 画云朵 (顶部，暗白色)
+  // 画云�?(顶部，暗白色)
   int cloudBottom = min(NUM_LEDS - 1, (int)flappyCloudBoundary);
   for (int i = cloudBottom; i < NUM_LEDS; i++) {
     strip.setPixelColor(i, strip.Color(40, 40, 40));
   }
 
-  // 画鸟 (黄色, 安全区域<=24像素时缩为1像素, 否则3像素)
+  // 画鸟 (黄色, 安全区域<=24像素时缩�?像素, 否则3像素)
   int by = (int)flappyBirdY;
   uint32_t birdColor = strip.Color(255, 255, 0);
   float currentGapSize = flappyCloudBoundary - flappyGroundBoundary;
@@ -1200,7 +1204,7 @@ void flappyBird_handleButtons() {
       if (rGreen == LOW && lastStateGreen == HIGH) {
         if (now - lastButtonPress > 100) {
           lastButtonPress = now;
-          // 纯物理冲量：将跳跃力叠加到当前速度上，不区分上升还是下落
+          // 纯物理冲量：将跳跃力叠加到当前速度上，不区分上升还是下�?
           flappyVelocity += flappyJumpStrength;
 
           // 限制最大向上速度，防止疯狂连按导致的穿模飞出屏幕
@@ -1242,7 +1246,7 @@ void flappyBird_handleButtons() {
   lastStateBlue = rBlue;
 }
 
-// ================= 11. 屏保检测 =================
+// ================= 11. 屏保检�?=================
 void checkSleepTimeout() {
   if (!isScreenSaver && (millis() - lastActivityTime > SLEEP_TIMEOUT)) {
     isScreenSaver = true;
@@ -1256,21 +1260,21 @@ void setup() {
   Serial.begin(115200);
   Serial.println("Pixel War Starting...");
 
-  // 初始化按键
+  // 初始化按�?
   pinMode(PIN_BTN_RED, INPUT_PULLUP);
   pinMode(PIN_BTN_GREEN, INPUT_PULLUP);
   pinMode(PIN_BTN_BLUE, INPUT_PULLUP);
   pinMode(PIN_BUZZER, OUTPUT);
 
-  // 初始化音频
+  // 初始化音�?
   audio.begin();
 
-  // 初始化 LED 灯带
+  // 初始�?LED 灯带
   strip.begin();
   strip.setBrightness(30);
   stripShowSafe();
 
-  // ================= [NEW] 初始化 BLE 服务 =================
+  // ================= [NEW] 初始�?BLE 服务 =================
   BLEDevice::init("Pixel War");
   pServer = BLEDevice::createServer();
   pServer->setCallbacks(new MyServerCallbacks());
@@ -1311,7 +1315,7 @@ void setup() {
   loadData();
   strip.setBrightness(currentBrightness * 255 / 100);
 
-  // 随机数种子
+  // 随机数种�?
   randomSeed(analogRead(0));
 
   // 启动动画
@@ -1340,7 +1344,7 @@ void loop() {
     return;
   }
 
-  // 屏保检测
+  // 屏保检�?
   checkSleepTimeout();
   if (isScreenSaver) {
     if (currentAppMode == MODE_LIGHT_BEAM) {
@@ -1354,7 +1358,7 @@ void loop() {
 
   unsigned long now = millis();
 
-  // ================= 10. 状态机与显示更新 =================
+  // ================= 10. 状态机与显示更�?=================
   if (bleFeedbackTimer > 0) {
     if (now - bleFeedbackTimer < 1200) {
       if (currentState == STATE_SETTINGS) {
@@ -1410,7 +1414,7 @@ void loop() {
           lightBeam_updateBullets();
         }
 
-        // 碰撞检测
+        // 碰撞检�?
         lightBeam_checkCollisions();
 
         // ================= 试玩模式 AI =================
@@ -1498,5 +1502,5 @@ void loop() {
     Serial.println("Restarted Advertising");
   }
 
-  delay(10); // 主循环延迟
+  delay(10); // 主循环延�?
 }

@@ -18,6 +18,9 @@ Desktop.ini
 # Logs
 *.log
 
+# Agents / Workflows
+.agents/
+
 # Secrets
 secrets.h
 pixel_war/secrets.h
